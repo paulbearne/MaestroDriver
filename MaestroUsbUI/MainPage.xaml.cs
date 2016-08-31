@@ -218,6 +218,7 @@ namespace MaestroUsbUI
         {
             UInt16 count = maestroItem.Maestro.ServoCount;
             UscSettings settings;
+            settings = await maestroItem.Maestro.getUscSettings();
             Connected = true;
             tbDeviceName.Text = maestroItem.Name + " Connected";
             MaestroControl[] maestroChannels = new MaestroControl[count];
@@ -225,15 +226,15 @@ namespace MaestroUsbUI
             {
                 maestroChannels[i] = new MaestroControl();
                 maestroChannels[i].ChannelNumber = i;
-
-                //  maestroChannels[i].Acceleration = Convert.ToUInt16(await maestroDevice.GetMaestroServoAccelerationAsync((byte)i));
-                //  maestroChannels[i].Speed = Convert.ToUInt16(await maestroDevice.GetMaestroServoSpeedAsync((byte)i));
+               
+                maestroChannels[i].Acceleration = Convert.ToUInt16(settings.channelSettings[i].acceleration);
+                maestroChannels[i].Speed = Convert.ToUInt16(settings.channelSettings[i].speed);
                 maestroPanel.Children.Add(maestroChannels[i]);
                 maestroChannels[i].positionChanged += MainPage_positionChanged;
                 maestroChannels[i].speedChanged += MainPage_speedChanged;
                 maestroChannels[i].accelerationChanged += MainPage_accelerationChanged;
             }
-            settings = await maestroItem.Maestro.getUscSettings();
+            
 
         }
 

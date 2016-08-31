@@ -19,6 +19,8 @@ namespace MaestroUsbUI
         private UInt16 acceleration = 0;
         private UInt16 channel = 0;
         private UInt16 position = 1500;
+        private UInt16 min = 500;
+        private UInt16 max = 2500;
 
         public delegate void OnPositionChanged(byte Channel,UInt16 newPosition);
         public event OnPositionChanged positionChanged;
@@ -70,6 +72,38 @@ namespace MaestroUsbUI
             set
             {
                 acceleration = value;
+            }
+        }
+
+        public UInt16 MinPosition
+        {
+            get
+            {
+                return min;
+            }
+            set
+            {
+                min = value;
+                if (min < max)
+                {
+                    slPosition.Minimum = min;
+                }
+            }
+        }
+
+        public UInt16 MaxPosition
+        {
+            get
+            {
+                return max;
+            }
+            set
+            {
+                max = value;
+                if (max > min)
+                {
+                    slPosition.Minimum = max;
+                }
             }
         }
 
