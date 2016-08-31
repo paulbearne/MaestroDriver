@@ -1,0 +1,96 @@
+﻿<UserControl x:Class="MaestroUsbUI.MaestroControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="using:MaestroUsbUI"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             d:DesignHeight="40"
+             d:DesignWidth="400"
+             mc:Ignorable="d">
+
+    <Grid Margin="0,0,0,0">
+        <StackPanel Orientation="Vertical">
+
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Margin="5,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="#" />
+                <TextBlock Name="Channel"
+                           VerticalAlignment="Center"
+                           Padding="0,0,5,0"
+                           Text="0" />
+                <Slider x:Name="slPosition"
+                        Width="150"
+                        Height="40"
+                        Maximum="2500"
+                        Minimum="500"
+                        TickFrequency="500"
+                        TickPlacement="Outside"
+                        ValueChanged="slPosition_ValueChanged"
+                        Value="1500" />
+                <StackPanel Height="35"
+                            Margin="0,0,0,0"
+                            Orientation="Horizontal"
+                            Padding="2,0,0,0">
+                    <TextBox x:Name="speedValue"
+                             Width="50"
+                             HorizontalAlignment="Left"
+                             VerticalAlignment="Center"
+                             BorderThickness="1"
+                             InputScope="Number"
+                             IsSpellCheckEnabled="False"
+                             PlaceholderText="0"
+                             Text=""
+                             TextChanged="speedValue_TextChanged"
+                             TextWrapping="Wrap" />
+
+                    <StackPanel Orientation="Vertical">
+                        <Image Name="speedUp"
+                               Width="20"
+                               Height="17"
+                               PointerPressed="speedUp_PointerPressed"
+                               Source="btnup.png" />
+                        <Image Name="speedDown"
+                               Width="20"
+                               Height="17"
+                               PointerPressed="speedDown_PointerPressed"
+                               Source="btndown.png" />
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Height="35"
+                            Margin="0,0,0,0"
+                            Orientation="Horizontal"
+                            Padding="2,0,0,0">
+                    <TextBox x:Name="accelerationValue"
+                             Width="50"
+                             HorizontalAlignment="Left"
+                             VerticalAlignment="Center"
+                             BorderThickness="1"
+                             InputScope="Number"
+                             IsSpellCheckEnabled="False"
+                             Padding="10,3,6,5"
+                             PlaceholderText="0"
+                             Text=""
+                             TextChanged="accelerationValue_TextChanged"
+                             TextWrapping="Wrap" />
+
+                    <StackPanel Orientation="Vertical">
+                        <Image Name="accelerationUp"
+                               Width="20"
+                               Height="17"
+                               PointerPressed="accelerationUp_PointerPressed"
+                               Source="btnup.png" />
+                        <Image Name="accelrationDown"
+                               Width="20"
+                               Height="17"
+                               PointerPressed="accelrationDown_PointerPressed"
+                               Source="btndown.png" />
+                    </StackPanel>
+                </StackPanel>
+
+            </StackPanel>
+        </StackPanel>
+
+
+    </Grid>
+</UserControl>
