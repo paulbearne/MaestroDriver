@@ -93,6 +93,7 @@
   <ItemGroup>
     <!-- A reference to the entire .Net Framework and Windows SDK are automatically included -->
     <None Include="project.json" />
+    <None Include="Readme.md" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App.xaml.cs">
@@ -122,7 +123,7 @@
     <Content Include="Assets\SplashScreen.scale-125.png" />
     <Content Include="Assets\SplashScreen.scale-150.png" />
     <Content Include="Assets\SplashScreen.scale-400.png" />
-    <Content Include="Instructions\maestrousb.txt" />
+    <Content Include="Instructions\Readme.txt" />
     <Content Include="Instructions\pololu.inf" />
     <Content Include="Instructions\pololu_usb_to_serial.inf" />
     <Content Include="Properties\Default.rd.xml" />
