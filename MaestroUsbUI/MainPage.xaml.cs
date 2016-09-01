@@ -40,6 +40,7 @@ namespace MaestroUsbUI
         private bool Connected = false;
         private MaestroDeviceListItem maestroDevice;
         private MaestroDeviceManager maestrodevices;
+        private UscSettings settings;
         public static Guid DeviceInterfaceClass = new Guid("{e0fbe39f-7670-4db6-9b1a-1dfb141014a7}");
         public MainPage()
         {
@@ -155,32 +156,6 @@ namespace MaestroUsbUI
             DeviceListSource.Source = listOfDevices;
             lbDevices.SelectionChanged += LbDevices_SelectionChanged;
 
-
-            /*  Connected = await maestroDevice.OpenFirstDevice();
-              if (Connected)
-              {
-                  UInt16 count = maestroDevice.getChannelCount();
-                  tbDeviceName.Text = maestroDevice.Name + " Connected";
-                  MaestroControl[] maestroChannels = new MaestroControl[count];
-                  for (UInt16 i = 0; i < count; i++)
-                  {
-                      maestroChannels[i] = new MaestroControl();
-                      maestroChannels[i].ChannelNumber = i;
-
-                      maestroChannels[i].Acceleration = Convert.ToUInt16(await maestroDevice.GetMaestroServoAccelerationAsync((byte)i));
-                      maestroChannels[i].Speed = Convert.ToUInt16(await maestroDevice.GetMaestroServoSpeedAsync((byte)i));
-                      maestroPanel.Children.Add(maestroChannels[i]);
-                      maestroChannels[i].positionChanged += MainPage_positionChanged;
-                      maestroChannels[i].speedChanged += MainPage_speedChanged;
-                      maestroChannels[i].accelerationChanged += MainPage_accelerationChanged;
-
-                  }
-               }
-               */
-
-
-
-
         }
 
         private async void LbDevices_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -214,11 +189,18 @@ namespace MaestroUsbUI
                      }));
         }
 
+        private unsafe int getservostructsize()
+        {
+            return sizeof(ServoStatus);
+        }
+
         private async void drawMaestroControls(MaestroDeviceListItem maestroItem)
         {
             UInt16 count = maestroItem.Maestro.ServoCount;
-            UscSettings settings;
+           
             settings = await maestroItem.Maestro.getUscSettings();
+           
+            ServoStatus[] servos = await maestroItem.Maestro.getVariablesMiniMaestro(getservostructsize());
             Connected = true;
             tbDeviceName.Text = maestroItem.Name + " Connected";
             MaestroControl[] maestroChannels = new MaestroControl[count];
@@ -238,30 +220,27 @@ namespace MaestroUsbUI
 
         }
 
-        private void updateTarget(byte Channel, UInt16 newPosition)
-        {
-            if (Connected)
-            {
-                maestroDevice.Maestro.setTarget(Channel,(UInt16)( newPosition * 4));
-                //await Task.Delay(200);
-            }
-
-        }
-
-
         private  void MainPage_accelerationChanged(byte Channel, byte newAcceleration)
         {
-            
+            settings.channelSettings[Channel].acceleration = newAcceleration;
+            maestroDevice.Maestro.setAcceleration(Channel,newAcceleration);
         }
 
-        private  void MainPage_speedChanged(byte Channel, byte newSpeed)
+        private  void MainPage_speedChanged(byte Channel, UInt16 newSpeed)
         {
-            
+            settings.channelSettings[Channel].speed = newSpeed;
+            maestroDevice.Maestro.setSpeed(Channel,newSpeed);
+
+
         }
 
         private  void MainPage_positionChanged(byte Channel, UInt16 newPosition)
         {
-            updateTarget(Channel, newPosition);
+            if (Connected)
+            {
+                maestroDevice.Maestro.setTarget(Channel, (UInt16)(newPosition * 4));
+                
+            }
         }
     }
 

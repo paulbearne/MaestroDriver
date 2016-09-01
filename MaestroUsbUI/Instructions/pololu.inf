@@ -1,0 +1,73 @@
+; Copyright (C) 2009-2012 Pololu.
+
+[Strings]
+DriverPackageDisplayName="Maestro Servo Controller Drivers"
+ManufacturerName="Pololu Corporation"
+ClassName="Pololu USB Devices"
+DeviceName89="Pololu Micro Maestro 6-Servo Controller"
+HardwareID89="USB\VID_1FFB&PID_0089&MI_04"
+DeviceName8a="Pololu Mini Maestro 12-Channel USB Servo Controller"
+HardwareID8a="USB\VID_1FFB&PID_008a&MI_04"
+DeviceName8b="Pololu Mini Maestro 18-Channel USB Servo Controller"
+HardwareID8b="USB\VID_1FFB&PID_008b&MI_04"
+DeviceName8c="Pololu Mini Maestro 24-Channel USB Servo Controller"
+HardwareID8c="USB\VID_1FFB&PID_008c&MI_04"
+DeviceInterfaceGUID="{e0fbe39f-7670-4db6-9b1a-1dfb141014a7}"
+
+[DefaultInstall]
+CopyINF=maestro.inf,pololu_usb_to_serial.inf
+
+[Version]
+DriverVer=11/12/2012,2.2.0.0
+Signature=$Windows NT$
+Class=PololuUSBDevices
+ClassGuid={6ed5eda6-46bd-40ef-85e3-8a7dae571d0e}
+Provider=%ManufacturerName%
+CatalogFile=WinUSBInstallation.cat
+DriverPackageDisplayName=%DriverPackageDisplayName%
+
+[Manufacturer]
+%ManufacturerName%=Models,NTarm
+
+[ClassInstall32]
+AddReg=ClassInstall_AddReg
+
+[ClassInstall_AddReg]
+HKR,,,,%ClassName%
+HKR,,NoInstallClass,,1
+HKR,,IconPath,%REG_MULTI_SZ%,"%systemroot%\system32\setupapi.dll,-20"
+HKR,,LowerLogoVersion,,5.2
+
+
+[Models]
+%DeviceName89%=USB_Install, %HardwareID89%
+%DeviceName8a%=USB_Install, %HardwareID8a%
+%DeviceName8b%=USB_Install, %HardwareID8b%
+%DeviceName8c%=USB_Install, %HardwareID8c%
+
+[Models.NTarm]
+%DeviceName89%=USB_Install, %HardwareID89%
+%DeviceName8a%=USB_Install, %HardwareID8a%
+%DeviceName8b%=USB_Install, %HardwareID8b%
+%DeviceName8c%=USB_Install, %HardwareID8c%
+
+[Models.NTamd64]
+%DeviceName89%=USB_Install, %HardwareID89%
+%DeviceName8a%=USB_Install, %HardwareID8a%
+%DeviceName8b%=USB_Install, %HardwareID8b%
+%DeviceName8c%=USB_Install, %HardwareID8c%
+
+[USB_Install]
+Include = WinUSB.inf,usb.inf 
+Needs = WinUSB.NT
+ 
+[USB_Install.Services]
+Include = WinUSB.inf
+Needs = WinUSB.NT.Services
+
+[USB_Install.HW]
+AddReg = Dev_AddReg
+ 
+[Dev_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x00010000,%DeviceInterfaceGUID%
+ 

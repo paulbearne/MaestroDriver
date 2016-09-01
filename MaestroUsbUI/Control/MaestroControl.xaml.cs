@@ -25,7 +25,7 @@ namespace MaestroUsbUI
         public delegate void OnPositionChanged(byte Channel,UInt16 newPosition);
         public event OnPositionChanged positionChanged;
 
-        public delegate void OnSpeedChanged(byte Channel, byte newSpeed);
+        public delegate void OnSpeedChanged(byte Channel, UInt16 newSpeed);
         public event OnSpeedChanged speedChanged;
 
         public delegate void OnAccelerationChanged(byte Channel, byte newAcceleration);
@@ -60,6 +60,7 @@ namespace MaestroUsbUI
             set
             {
                 speed = value;
+                speedValue.Text = speed.ToString();
             }
         }
 
@@ -72,6 +73,8 @@ namespace MaestroUsbUI
             set
             {
                 acceleration = value;
+                accelerationValue.Text = acceleration.ToString();
+
             }
         }
 
@@ -122,7 +125,7 @@ namespace MaestroUsbUI
 
         private void speedUp_PointerPressed(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            if (speed < 254)
+            if (speed < 3969)
             {
                 speed++;
                 speedValue.Text = speed.ToString();
@@ -140,7 +143,7 @@ namespace MaestroUsbUI
 
         private void accelerationUp_PointerPressed(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            if(acceleration < 254)
+            if(acceleration < 255)
             {
                 acceleration++;
                 accelerationValue.Text = acceleration.ToString();
@@ -158,7 +161,7 @@ namespace MaestroUsbUI
 
         private void speedValue_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if( (Int16.Parse(speedValue.Text) > 254) || (Int16.Parse(speedValue.Text) < 0))
+            if( (Int16.Parse(speedValue.Text) > 3968) || (Int16.Parse(speedValue.Text) < 0))
             {
                 speedValue.Text = speed.ToString();
             }
@@ -167,7 +170,7 @@ namespace MaestroUsbUI
                 speed = UInt16.Parse(speedValue.Text);
                 if (speedChanged != null)
                 {
-                    speedChanged(Convert.ToByte(channel), Convert.ToByte(speed) );
+                    speedChanged(Convert.ToByte(channel), speed);
                 }
             }
         }

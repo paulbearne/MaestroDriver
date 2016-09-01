@@ -122,6 +122,9 @@
     <Content Include="Assets\SplashScreen.scale-125.png" />
     <Content Include="Assets\SplashScreen.scale-150.png" />
     <Content Include="Assets\SplashScreen.scale-400.png" />
+    <Content Include="Instructions\maestrousb.txt" />
+    <Content Include="Instructions\pololu.inf" />
+    <Content Include="Instructions\pololu_usb_to_serial.inf" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
