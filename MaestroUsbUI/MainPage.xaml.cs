@@ -33,28 +33,33 @@ namespace MaestroUsbUI
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private const String ButtonNameDisconnectFromDevice = "Disconnect from device";
-        private const String ButtonNameDisableReconnectToDevice = "Do not automatically reconnect to device that was just closed";
-
+        // add observable collection to show list of maestro devices in combobox
         private ObservableCollection<MaestroDeviceListItem> listOfDevices;
         private bool Connected = false;
+        //  single maestro board
         private MaestroDeviceListItem maestroDevice;
+        // all maestro boards
         private MaestroDeviceManager maestrodevices;
+        // maestro settings
         private UscSettings settings;
         public static Guid DeviceInterfaceClass = new Guid("{e0fbe39f-7670-4db6-9b1a-1dfb141014a7}");
         public MainPage()
         {
+            // init the comboboc collection
             listOfDevices = new ObservableCollection<MaestroDeviceListItem>();
             this.InitializeComponent();
 
 
         }
 
-
+        // gets a list of connected boards
         private void getDeviceList()
         {
+            // create devicemanager
             maestrodevices = new MaestroDeviceManager();
+            // callback so that we are notified that the list of devices is ready
             maestrodevices.deviceListReadyCallback += Maestrodevices_deviceListReadyCallback;
+            // buid the list of currently plugged in boards
             maestrodevices.BuildDeviceList();
 
         }
@@ -71,7 +76,7 @@ namespace MaestroUsbUI
                     {
                         foreach (MaestroDeviceListItem item in devices)
                         {
-                            // make the initial device list match our list
+                            // make the combobox list match our device list
                             listOfDevices.Add(item);
                         }
                         if (listOfDevices.Count > 0)
@@ -80,8 +85,10 @@ namespace MaestroUsbUI
                         }
                     }));
             }
-            //add callbacks 
+            //add device callbacks 
+            // notify us when a board is plugged in
             maestrodevices.deviceAddedCallback += Maestrodevices_deviceAddedCallback;
+            // notify us when a board is removed
             maestrodevices.deviceRemovedCallback += Maestrodevices_deviceRemovedCallback;
         }
 
@@ -93,13 +100,15 @@ namespace MaestroUsbUI
                 await Dispatcher.RunAsync(
                       CoreDispatcherPriority.Normal,
                       new DispatchedHandler(() =>
-                      {
+                      { 
+                          // find the board thats been removed in the combobox list
                           var firstitem = listOfDevices.First(e => e.Id == deviceInfo.Id);
+                          // get its item index
                           int index = listOfDevices.IndexOf(firstitem);
                           lbDevices.SelectedIndex = -1;
                           if (index > -1)
                           {
-
+                              // remove the board from the list
                               listOfDevices.RemoveAt(index);
                               if (listOfDevices.Count > 0)
                               {
@@ -123,6 +132,7 @@ namespace MaestroUsbUI
                      CoreDispatcherPriority.Normal,
                      new DispatchedHandler(() =>
                      {
+                         // this can happen on first build as the event will be triggered even though we have built the list manually
                          foreach (MaestroDeviceListItem item in listOfDevices)
                          {
                              if (item.deviceInformation.Id == device.deviceInformation.Id)
@@ -135,6 +145,7 @@ namespace MaestroUsbUI
                          }
                          if (matched == false)
                          {
+                             // add the new board
                              listOfDevices.Add(device);
                              if ((lbDevices.SelectedIndex == -1) && (listOfDevices.Count > 0))
                              {
@@ -150,10 +161,11 @@ namespace MaestroUsbUI
 
         protected override void OnNavigatedTo(NavigationEventArgs eventArgs)
         {
+            // retrieve a list of boards
             getDeviceList();
-
-
+            // bind the combobox to the collection
             DeviceListSource.Source = listOfDevices;
+            // add callback for a device being selected
             lbDevices.SelectionChanged += LbDevices_SelectionChanged;
 
         }
@@ -162,6 +174,7 @@ namespace MaestroUsbUI
         {
             if (lbDevices.SelectedIndex > -1)
             {
+                // get the board
                 maestroDevice = listOfDevices[lbDevices.SelectedIndex];
                 // check if we are connected
                 if (maestroDevice.device == null)
@@ -184,34 +197,39 @@ namespace MaestroUsbUI
                      CoreDispatcherPriority.Normal,
                      new DispatchedHandler(() =>
                      {
-                         // now connected
+                         // now connected so draw our sliders
                          drawMaestroControls(device);
                      }));
         }
 
-        private unsafe int getservostructsize()
-        {
-            return sizeof(ServoStatus);
-        }
+
+      //  private unsafe int getservostructsize()
+        //{
+          //  return sizeof(ServoStatus);
+        //}
 
         private async void drawMaestroControls(MaestroDeviceListItem maestroItem)
         {
+            // get the number of servos on the board
             UInt16 count = maestroItem.Maestro.ServoCount;
-           
+            // get all the settings stored on the board
             settings = await maestroItem.Maestro.getUscSettings();
            
-            ServoStatus[] servos = await maestroItem.Maestro.getVariablesMiniMaestro(getservostructsize());
+            //  ServoStatus[] servos = await maestroItem.Maestro.getVariablesMiniMaestro(getservostructsize());
             Connected = true;
             tbDeviceName.Text = maestroItem.Name + " Connected";
+            // Create an array of  controls
             MaestroControl[] maestroChannels = new MaestroControl[count];
             for (UInt16 i = 0; i < count; i++)
             {
+                // add a speed , acceleration and target controls to the app
                 maestroChannels[i] = new MaestroControl();
                 maestroChannels[i].ChannelNumber = i;
-               
+                // update the controls to show current values from the board
                 maestroChannels[i].Acceleration = Convert.ToUInt16(settings.channelSettings[i].acceleration);
                 maestroChannels[i].Speed = Convert.ToUInt16(settings.channelSettings[i].speed);
                 maestroPanel.Children.Add(maestroChannels[i]);
+                // add the callbacks for changes
                 maestroChannels[i].positionChanged += MainPage_positionChanged;
                 maestroChannels[i].speedChanged += MainPage_speedChanged;
                 maestroChannels[i].accelerationChanged += MainPage_accelerationChanged;
@@ -222,13 +240,14 @@ namespace MaestroUsbUI
 
         private  void MainPage_accelerationChanged(byte Channel, byte newAcceleration)
         {
-            settings.channelSettings[Channel].acceleration = newAcceleration;
+            //  add new value to
+           // settings.channelSettings[Channel].acceleration = newAcceleration;
             maestroDevice.Maestro.setAcceleration(Channel,newAcceleration);
         }
 
         private  void MainPage_speedChanged(byte Channel, UInt16 newSpeed)
         {
-            settings.channelSettings[Channel].speed = newSpeed;
+           // settings.channelSettings[Channel].speed = newSpeed;
             maestroDevice.Maestro.setSpeed(Channel,newSpeed);
 
 
@@ -238,6 +257,7 @@ namespace MaestroUsbUI
         {
             if (Connected)
             {
+                // set target position in us
                 maestroDevice.Maestro.setTarget(Channel, (UInt16)(newPosition * 4));
                 
             }
