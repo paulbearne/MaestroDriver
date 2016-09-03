@@ -214,8 +214,7 @@ namespace MaestroUsbUI
             UInt16 count = maestroItem.Maestro.ServoCount;
             // get all the settings stored on the board
             settings = await maestroItem.Maestro.getUscSettings();
-           
-            //  ServoStatus[] servos = await maestroItem.Maestro.getVariablesMiniMaestro(getservostructsize());
+            maestroItem.Maestro.getMaestroVariables();
             Connected = true;
             tbDeviceName.Text = maestroItem.Name + " Connected";
             // Create an array of  controls
@@ -237,6 +236,7 @@ namespace MaestroUsbUI
             
 
         }
+
 
         private  void MainPage_accelerationChanged(byte Channel, byte newAcceleration)
         {

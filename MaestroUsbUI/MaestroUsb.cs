@@ -1,14 +1,3 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
 using System;
 using Windows.Storage.Streams;
 using Windows.Devices.Usb;
@@ -17,8 +6,6 @@ using System.Diagnostics;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
 using System.Collections.ObjectModel;
-using System.Collections.Generic;
-using MaestroUsbUI;
 using Pololu.Usc;
 
 namespace MaestroUsb
@@ -35,10 +22,12 @@ namespace MaestroUsb
         private String id;
         private UInt16 ProductId;
         private MaestroDevice maestro;
-        
 
 
 
+        /// <summary>
+        /// Windows device information
+        /// </summary>
         public DeviceInformation deviceInformation
         {
             get
@@ -47,6 +36,9 @@ namespace MaestroUsb
             }
         }
 
+        /// <summary>
+        /// true if the usb is connected to the maestro board
+        /// </summary>
         public bool Connected
         {
             get
@@ -58,6 +50,7 @@ namespace MaestroUsb
                 isConnected = value;
             }
         }
+
         /// <summary>
         /// The text to display to the user in the list to represent this
         /// device.  By default, this text is "#" + serialNumberString,
@@ -466,11 +459,18 @@ namespace MaestroUsb
         private byte servoParameterBytes = 9;
         private MaestroDeviceListItem maestroDevice;
         private const int INSTRUCTION_FREQUENCY = 12000000;
+        private MaestroVariables mVariables;
+        private MicroMaestroVariables mMicroVariables;
+        private ServoStatus[] mServoStatus;
+        private short[] stack;
+        private ushort[] callstack;
         public const int MicroMaestroStackSize = 32;
         public const int MicroMaestroCallStackSize = 10;
 
         public const int MiniMaestroStackSize = 126;
         public const int MiniMaestroCallStackSize = 126;
+        uint microVariablePacketSize;
+        uint miniVariablePacketSize;
         private byte servoCount;
         public static UInt16[] DevicePids = { (UInt16)0x0089, (UInt16)0x008A, (UInt16)0x008B, (UInt16)0x008C };
         
@@ -485,8 +485,84 @@ namespace MaestroUsb
                 case 0x8C: servoCount = 24; break;
                 default: throw new Exception("Unknown product id " + maestro.productId.ToString("x2") + ".");
             }
+            mServoStatus = new ServoStatus[servoCount];
+            mVariables = new MaestroVariables();
+            mMicroVariables = new MicroMaestroVariables();
+            updateVariablePacketSize();
         }
 
+        public unsafe void updateVariablePacketSize()
+        {
+            microVariablePacketSize =(uint)(sizeof(MicroMaestroVariables) + servoCount * sizeof(ServoStatus));
+            miniVariablePacketSize = (uint)(sizeof(MiniMaestroVariables));
+        }
+
+
+        // mini variables
+        public MaestroVariables MiniVariables
+        {
+            get
+            {
+                return mVariables;
+            }
+            set
+            {
+                mVariables = value;
+            }
+        }
+
+        // micro Variables
+        public MicroMaestroVariables MicroVariables
+        {
+            get
+            {
+                return mMicroVariables;
+            }
+            set
+            {
+                mMicroVariables = value;
+            }
+        }
+
+        // servo status array readonly
+        public ServoStatus[] servoStatus
+        {
+            get
+            {
+                return mServoStatus;
+            }
+        }
+
+
+        // call stack property
+        public ushort[] CallStack
+        {
+            get
+            {
+                return callstack;
+            }
+            set
+            {
+                callstack = value;
+            }
+        }
+
+
+        // call stack property
+        public short[] Stack
+        {
+            get
+            {
+                return stack;
+            }
+            set
+            {
+                stack = value;
+            }
+        }
+
+
+        // servocount property readonly
         public byte ServoCount
         {
             get
@@ -495,7 +571,8 @@ namespace MaestroUsb
             }
         }
 
-        protected bool microMaestro
+        // test if micro or mini true if micro
+        public bool microMaestro
         {
             get
             {
@@ -626,7 +703,7 @@ namespace MaestroUsb
 
 
 
-        protected async Task<UInt16> controlTransfer(byte requestType, byte request, ushort value, ushort index, byte[] data)
+     /*   protected async Task<UInt16> controlTransfer(byte requestType, byte request, ushort value, ushort index, byte[] data)
         {
             if (requestType == 0x40)
             {
@@ -703,7 +780,8 @@ namespace MaestroUsb
                 }
             }
             return 0;// dummy get rid of when coded
-        }
+        }*/
+
 
         protected async void controlTransfer(byte requestType, byte request, ushort value, ushort index)
         {
@@ -735,7 +813,7 @@ namespace MaestroUsb
                         Length = 0
                     };
 
-
+                    
                     await maestroDevice.device.SendControlOutTransferAsync(setupPacket);
                 }
                 catch (Exception e)
@@ -746,10 +824,7 @@ namespace MaestroUsb
             
         }
 
-        protected unsafe uint controlTransfer(byte RequestType, byte Request, ushort Value, ushort Index, void* data, ushort Length)
-        {
-            return 0; // dummy get rid of when coded
-        }
+        
 
         private uscSerialMode bytetoSerialMode(byte modebyte)
         {
@@ -1033,273 +1108,249 @@ namespace MaestroUsb
         }
 
 
-        /// <summary>
-        /// Gets the complete set of status information for the Maestro.
-        /// </summary>
-        /// <remarks>If you are using a Mini Maestro and do not need all of
-        /// the data provided by this function, you can save some CPU time
-        /// by using the overloads with fewer arguments.</remarks>
-     /*   public unsafe void getVariables(out MaestroVariables variables, out short[] stack, out ushort[] callStack, out ServoStatus[] servos)
+        private unsafe uint getMiniVariablesPacketSize()
         {
-            if (microMaestro)
-            {
-                // On the Micro Maestro, this function requires just one control transfer:
-                getVariablesMicroMaestro(out variables, out stack, out callStack, out servos);
-            }
-            else
-            {
-                // On the Mini Maestro, this function requires four control transfers:
-                getVariablesMiniMaestro(out variables);
-                getVariablesMiniMaestro(out servos);
-                getVariablesMiniMaestro(out stack);
-                getVariablesMiniMaestro(out callStack);
-            }
+            return (uint)sizeof(MaestroVariables);
         }
 
-        /// <summary>
-        /// Gets a MaestroVariables struct representing the current status
-        /// of the device.
-        /// </summary>
-        /// <remarks>If you are using the Micro Maestro and calling
-        /// getVariables more than once in quick succession,
-        /// then you can save some CPU time by just using the
-        /// overload that has 4 arguments.
-        /// </remarks>
-        public void getVariables(out MaestroVariables variables)
-        {
-            if (microMaestro)
-            {
-                ServoStatus[] servos;
-                short[] stack;
-                ushort[] callStack;
-                getVariablesMicroMaestro(out variables, out stack, out callStack, out servos);
-            }
-            else
-            {
-                getVariablesMiniMaestro(out variables);
-            }
-        }
-
-        /// <summary>
-        /// Gets an array of ServoStatus structs representing
-        /// the current status of all the channels.
-        /// </summary>
-        /// <remarks>If you are using the Micro Maestro and calling
-        /// getVariables more than once in quick succession,
-        /// then you can save some CPU time by just using the
-        /// overload that has 4 arguments.
-        /// </remarks>
-        public void getVariables(out ServoStatus[] servos)
-        {
-            if (microMaestro)
-            {
-                MaestroVariables variables;
-                short[] stack;
-                ushort[] callStack;
-                getVariablesMicroMaestro(out variables, out stack, out callStack, out servos);
-            }
-            else
-            {
-                getVariablesMiniMaestro(out servos);
-            }
-        }
-
-        /// <summary>
-        /// Gets an array of shorts[] representing the current stack.
-        /// The maximum size of the array is stackSize.
-        /// </summary>
-        /// <remarks>If you are using the Micro Maestro and calling
-        /// getVariables more than once in quick succession,
-        /// then you can save some CPU time by just using the
-        /// overload that has 4 arguments.
-        /// </remarks>
-        public void getVariables(out short[] stack)
-        {
-            if (microMaestro)
-            {
-                MaestroVariables variables;
-                ServoStatus[] servos;
-                ushort[] callStack;
-                getVariablesMicroMaestro(out variables, out stack, out callStack, out servos);
-            }
-            else
-            {
-                getVariablesMiniMaestro(out stack);
-            }
-        }
-
-        /// <summary>
-        /// Gets an array of ushorts[] representing the current stack.
-        /// The maximum size of the array is callStackSize.
-        /// </summary>
-        /// <remarks>If you are using the Micro Maestro and calling
-        /// getVariables more than once in quick succession,
-        /// then you can save some CPU time by just using the
-        /// overload that has 4 arguments.
-        /// </remarks>
-        public void getVariables(out ushort[] callStack)
-        {
-            if (microMaestro)
-            {
-                MaestroVariables variables;
-                short[] stack;
-                ServoStatus[] servos;
-                getVariablesMicroMaestro(out variables, out stack, out callStack, out servos);
-            }
-            else
-            {
-                getVariablesMiniMaestro(out callStack);
-            }
-        }
-
-        private unsafe void getVariablesMicroMaestro(out MaestroVariables variables, out short[] stack, out ushort[] callStack, out ServoStatus[] servos)
-        {
-            byte[] array = new byte[sizeof(MicroMaestroVariables) + servoCount * sizeof(ServoStatus)];
-
-            try
-            {
-                controlTransfer(0xC0, (byte)uscRequest.REQUEST_GET_VARIABLES, 0, 0, array).RunSynchronously();
-            }
-            catch (Exception e)
-            {
-                throw new Exception("There was an error getting the device variables.", e);
-            }
-
-            fixed (byte* pointer = array)
-            {
-                // copy the variable data
-                MicroMaestroVariables tmp = *(MicroMaestroVariables*)pointer;
-                variables.stackPointer = tmp.stackPointer;
-                variables.callStackPointer = tmp.callStackPointer;
-                variables.errors = tmp.errors;
-                variables.programCounter = tmp.programCounter;
-                variables.scriptDone = tmp.scriptDone;
-                variables.performanceFlags = 0;
-
-                servos = new ServoStatus[servoCount];
-                for (byte i = 0; i < servoCount; i++)
-                {
-                    servos[i] = *(ServoStatus*)(pointer + sizeof(MicroMaestroVariables) + sizeof(ServoStatus) * i);
-                }
-
-                stack = new short[variables.stackPointer];
-                for (byte i = 0; i < stack.Length; i++) { stack[i] = *(tmp.stack + i); }
-
-                callStack = new ushort[variables.callStackPointer];
-                for (byte i = 0; i < callStack.Length; i++) { callStack[i] = *(tmp.callStack + i); }
-            }
-        }
-
-        private unsafe void getVariablesMiniMaestro(out MaestroVariables variables)
+        private async Task<MaestroVariables> getVariablesMiniMaestro()
         {
             try
             {
                 // Get miscellaneous variables.
-                MiniMaestroVariables tmp;
-                UInt32 bytesRead = controlTransfer(0xC0, (byte)uscRequest.REQUEST_GET_VARIABLES, 0, 0, &tmp, (ushort)sizeof(MiniMaestroVariables));
-                if (bytesRead != sizeof(MiniMaestroVariables))
+               
+                IBuffer buffer = await miniMaestroControlTransfer((byte)uscRequest.REQUEST_GET_VARIABLES, getMiniVariablesPacketSize());
+                UInt32 bytesRead =buffer.Length;
+                if (bytesRead != getMiniVariablesPacketSize())
                 {
-                    throw new Exception("Short read: " + bytesRead + " < " + sizeof(MiniMaestroVariables) + ".");
+                    throw new Exception("Short read: " + bytesRead + " < " + getMiniVariablesPacketSize() + ".");
                 }
 
+                DataReader reader = DataReader.FromBuffer(buffer);
+                MaestroVariables variables = new MaestroVariables();
                 // Copy the variable data
-                variables.stackPointer = tmp.stackPointer;
-                variables.callStackPointer = tmp.callStackPointer;
-                variables.errors = tmp.errors;
-                variables.programCounter = tmp.programCounter;
-                variables.scriptDone = tmp.scriptDone;
-                variables.performanceFlags = tmp.performanceFlags;
+                variables.stackPointer = reader.ReadByte();
+                variables.callStackPointer = reader.ReadByte();
+                variables.errors = reader.ReadUInt16();
+                variables.programCounter = reader.ReadUInt16();
+                variables.scriptDone = reader.ReadByte();
+                variables.performanceFlags = reader.ReadByte();
+                return variables;
             }
             catch (Exception e)
             {
-                throw new Exception("Error getting variables from device.", e);
+                Debug.WriteLine(e);
+                return new MaestroVariables(); // return empty structs
             }
-        }*/
+        }
 
-           public async Task<ServoStatus[]> getVariablesMiniMaestro(int servostructsize)
-           {
-               try
-               {
-                   // each servo status struct is 7 bytes
-                   uint packetLength = (uint)(servoCount * servostructsize);
-                   var buffer = new Windows.Storage.Streams.Buffer(packetLength);
-                   byte[] servoSettingsArray = new byte[packetLength];
 
-                   UsbSetupPacket setupPacket = new UsbSetupPacket
-                   {
-                       RequestType = new UsbControlRequestType
-                       {
-                           Direction = UsbTransferDirection.In,
-                           Recipient = UsbControlRecipient.Device,
-                           ControlTransferType = UsbControlTransferType.Vendor,
-                       },
-                       Request = (byte)uscRequest.REQUEST_GET_SERVO_SETTINGS,
-                       Length = packetLength
-                   };
-                   IBuffer retBuffer = await maestroDevice.device.SendControlInTransferAsync(setupPacket,buffer);
-                   DataReader reader = DataReader.FromBuffer(retBuffer);
+        //todo: change this to return bool as the micro one does
+        private async Task<ServoStatus[]> getServosMiniMaestro()
+        {
+            try
+            {
+                uint packetSize = (uint)(servoCount * 7);
+                ServoStatus[] servos = new ServoStatus[servoCount];
+                IBuffer buffer = await miniMaestroControlTransfer((byte)uscRequest.REQUEST_GET_SERVO_SETTINGS,packetSize);
+                DataReader reader = DataReader.FromBuffer(buffer);
+                servos = new ServoStatus[servoCount];
+                for (byte i = 0; i < servoCount; i++)
+                {
+                    servos[i].position = reader.ReadUInt16();
+                    servos[i].target = reader.ReadUInt16();
+                    servos[i].speed = reader.ReadUInt16();
+                    servos[i].acceleration = reader.ReadByte();
+                }
+                return servos;
+                
+            } catch(Exception e)
+            {
+                Debug.WriteLine(e);
+                return null;
+            }
+         }
 
-                   if (retBuffer.Length != servoSettingsArray.Length)
-                   {
-                       throw new Exception("Short read: " + retBuffer.Length + " < " + servoSettingsArray.Length + ".");
-                   }
-                   reader.ReadBytes(servoSettingsArray);
-                   // Put the data in to a managed array object.
-                   ServoStatus[] servos = new ServoStatus[servoCount];
-                   for (int i = 0; i < servoCount; i++)
-                   {
-                       servos[i].position = reader.ReadUInt16();
-                       servos[i].target = reader.ReadUInt16();
-                       servos[i].speed = reader.ReadUInt16();
-                       servos[i].acceleration = reader.ReadByte();
+        private unsafe uint getMicroVariablesPacketSize()
+        {
+            return (uint)(sizeof(MicroMaestroVariables) + servoCount * sizeof(ServoStatus));
+        }
 
-                   }
+        private async Task<bool> getVariablesMicroMaestro()
+        {
+            try
+            {
+                uint packetSize = getMicroVariablesPacketSize();
+                IBuffer buffer = await microMaestroControlTransfer((byte)uscRequest.REQUEST_GET_VARIABLES, packetSize);
+                if (buffer.Length != getMicroVariablesPacketSize())
+                {
+                    throw new Exception("Short read: " + buffer.Length + " < " + getMicroVariablesPacketSize() + ".");
+                }
+                // copy the variable data
+                DataReader reader = DataReader.FromBuffer(buffer);
 
-                   return servos;
-               }
-               catch (Exception e)
-               {
-                   Debug.WriteLine(e);
-                   return null;
-               }
-           }
+                // Copy the variable data
+                mVariables.stackPointer = reader.ReadByte();
+                mVariables.callStackPointer = reader.ReadByte();
+                mVariables.errors = reader.ReadUInt16();
+                mVariables.programCounter = reader.ReadUInt16();
+                mVariables.scriptDone = reader.ReadByte();
+                mVariables.performanceFlags = reader.ReadByte();
+                for (byte i = 0; i < servoCount; i++)
+                {
+                    mServoStatus[i].position = reader.ReadUInt16();
+                    mServoStatus[i].target = reader.ReadUInt16();
+                    mServoStatus[i].speed = reader.ReadUInt16();
+                    mServoStatus[i].acceleration = reader.ReadByte();
+                }
+                stack = new short[mVariables.stackPointer];
+                for (byte i = 0; i < stack.Length; i++)
+                {
+                    stack[i] = reader.ReadInt16();
+                }
+                callstack = new ushort[mVariables.callStackPointer];
+                for (byte i = 0; i < callstack.Length; i++)
+                {
+                    callstack[i] = reader.ReadUInt16();
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+                return false;
+            }
+        }
 
-        private unsafe void getVariablesMiniMaestro(out short[] stack)
+        private async Task<short[]> getStackMiniMaestro()
         {
             try
             {
                 // Get the data stack.
-                stack = new short[MiniMaestroStackSize];
-                fixed (short* pointer = stack)
+                short[] stack = new short[MiniMaestroStackSize];
+                IBuffer buffer = await miniMaestroControlTransfer((byte)uscRequest.REQUEST_GET_STACK, (uint)(2* MiniMaestroStackSize));
+                DataReader reader = DataReader.FromBuffer(buffer);
+                for (int i = 0;i < stack.Length; i++)
                 {
-                    UInt32 bytesRead = controlTransfer(0xC0, (byte)uscRequest.REQUEST_GET_STACK, 0, 0, pointer, (ushort)(sizeof(short) * stack.Length));
-                    Array.Resize<short>(ref stack, (int)(bytesRead / sizeof(short)));
+                    stack[i] = reader.ReadInt16();
                 }
+
+                return stack;
+
             }
             catch (Exception e)
             {
-                throw new Exception("Error getting stack from device.", e);
+                Debug.WriteLine(e);
+                return new short[MiniMaestroStackSize];
             }
         }
 
-        private unsafe void getVariablesMiniMaestro(out ushort[] callStack)
+        private async Task<ushort[]> getCallStackMiniMaestro()
         {
             try
             {
-                callStack = new ushort[MiniMaestroCallStackSize];
-                fixed (ushort* pointer = callStack)
+                ushort[] callStack = new ushort[MiniMaestroCallStackSize];
+                IBuffer buffer = await miniMaestroControlTransfer((byte)uscRequest.REQUEST_GET_CALL_STACK, (uint)(2 * MiniMaestroCallStackSize));
+                DataReader reader = DataReader.FromBuffer(buffer);
+                for (int i = 0; i < callStack.Length; i++)
                 {
-                    UInt32 bytesRead = controlTransfer(0xC0, (byte)uscRequest.REQUEST_GET_CALL_STACK, 0, 0, pointer, (ushort)(sizeof(ushort) * callStack.Length));
-                    Array.Resize<ushort>(ref callStack, (int)(bytesRead / sizeof(ushort)));
+                    callStack[i] = reader.ReadUInt16();
                 }
+                return callStack;
+
             }
             catch (Exception e)
             {
-                throw new Exception("Error getting call stack from device.", e);
+                Debug.WriteLine(e);
+                return new ushort[MiniMaestroCallStackSize];
             }
         }
 
+        public async Task<IBuffer> miniMaestroControlTransfer(byte uscrequest, uint packetSize)
+        {
+            try
+            {
+                var buffer = new Windows.Storage.Streams.Buffer(packetSize);
+                UsbSetupPacket setupPacket = new UsbSetupPacket
+                {
+                    RequestType = new UsbControlRequestType
+                    {
+                        Direction = UsbTransferDirection.In,
+                        Recipient = UsbControlRecipient.Device,
+                        ControlTransferType = UsbControlTransferType.Vendor,
+                    },
+                    Request = (byte)uscrequest,
+                    Length = packetSize
+                };
 
+                IBuffer retBuffer = await maestroDevice.device.SendControlInTransferAsync(setupPacket, buffer);
+                return retBuffer;
+            } catch (Exception e)
+            {
+                Debug.WriteLine(e);
+                return null;
+            }
+        }
+
+        public async Task<IBuffer> microMaestroControlTransfer(byte uscrequest, uint packetSize)
+        {
+            try
+            {
+                var buffer = new Windows.Storage.Streams.Buffer(packetSize);
+                UsbSetupPacket setupPacket = new UsbSetupPacket
+                {
+                    RequestType = new UsbControlRequestType
+                    {
+                        Direction = UsbTransferDirection.In,
+                        Recipient = UsbControlRecipient.Device,
+                        ControlTransferType = UsbControlTransferType.Vendor,
+                    },
+                    Request = (byte)uscRequest.REQUEST_GET_SERVO_SETTINGS,
+                    Length = packetSize
+                };
+
+                IBuffer retBuffer = await maestroDevice.device.SendControlInTransferAsync(setupPacket, buffer);
+                return retBuffer;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+                return null;
+            }
+        }
+
+        public async void getMaestroVariables()
+        {
+            try
+            {
+                uint packetLength;
+                //set size depending on device
+                if (microMaestro)
+                {
+                    packetLength = microVariablePacketSize;
+                    stack = new short[MicroMaestroStackSize];
+                    callstack = new ushort[MicroMaestroCallStackSize];
+                    await getVariablesMicroMaestro();
+                }
+                else
+                {
+                    mVariables = await getVariablesMiniMaestro();
+                    mServoStatus = await  getServosMiniMaestro();
+                    stack = new short[MiniMaestroStackSize];
+                    stack = await getStackMiniMaestro();
+                    callstack = new ushort[MiniMaestroCallStackSize];       
+                    callstack = await getCallStackMiniMaestro();
+                }
+              
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+                
+            }
+        }
+
+        
 
         public void setTarget(byte servo, ushort value)
         {
