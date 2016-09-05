@@ -99,14 +99,20 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ConfigurationFile.cs" />
     <Compile Include="Control\MaestroControl.xaml.cs">
       <DependentUpon>MaestroControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Control\ChannelSettingsControl.xaml.cs">
+      <DependentUpon>ChannelSettingsControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Frame.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MaestroUsb.cs" />
+    <Compile Include="Sequence.cs" />
     <Compile Include="UscSettings.cs" />
     <Compile Include="Usc_protocol.cs" />
   </ItemGroup>
@@ -144,10 +150,23 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Control\ChannelSettingsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="ChannelSettingsPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Bytecode">
+      <HintPath>..\..\..\refProjects\pololu-usb-sdk\Maestro\Bytecode\Bytecode.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>

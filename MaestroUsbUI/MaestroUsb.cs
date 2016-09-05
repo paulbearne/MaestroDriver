@@ -7,14 +7,21 @@ using Windows.Devices.Enumeration;
 using Windows.Foundation;
 using System.Collections.ObjectModel;
 using Pololu.Usc;
+using Pololu.Usc.Bytecode;
+using System.Collections.Generic;
+using Windows.Storage;
+using System.IO;
+using System.Xml;
 
 namespace MaestroUsb
 {
-  
 
 
+    /// <summary>
+    /// Maestro usb list item holds device information 
+    /// </summary>
      public class MaestroDeviceListItem
-    {
+     {
         private String name;
         private bool isConnected = false;
         private DeviceInformation devinformation;
@@ -52,10 +59,7 @@ namespace MaestroUsb
         }
 
         /// <summary>
-        /// The text to display to the user in the list to represent this
-        /// device.  By default, this text is "#" + serialNumberString,
-        /// but it can be changed to suit the application's needs
-        /// (for example, adding model information to it).
+        /// Board type name
         /// </summary>
         public String Name
         {
@@ -72,7 +76,7 @@ namespace MaestroUsb
        
 
         /// <summary>
-        /// Gets the serial number.
+        /// Gets the device Id
         /// </summary>
         public String Id
         {
@@ -112,6 +116,10 @@ namespace MaestroUsb
             }
         }
 
+        /// <summary>
+        /// Maestro Device holder allows access to maestro usb functions
+        /// and settings
+        /// </summary>
         public MaestroDevice Maestro
         {
             get
@@ -131,15 +139,13 @@ namespace MaestroUsb
         }
 
         /// <summary>
-        /// Creates an item that doesn't actually refer to a device; just for populating the list with things like "Disconnected"
+        /// Maestro List Item Constructor 
         /// </summary>
-        /// <param name="text"></param>
-        public static MaestroDeviceListItem CreateDummyItem(String text)
-        {
-            var item = new MaestroDeviceListItem(null,null, text, "", 0);
-            return item;
-        }
-
+        /// <param name="devicePointer">Windows UsbDevice/param>
+        /// <param name="devInfo">Windows DeviceInformation</param>
+        /// <param name="text">Human readable device Name</param>
+        /// <param name="Id">Windows Device Id</param>
+        /// <param name="productId">usb device pid</param>
         public MaestroDeviceListItem(UsbDevice devicePointer, DeviceInformation devInfo, string text, string Id, UInt16 productId)
         {
             usbDevice = devicePointer;
@@ -148,8 +154,11 @@ namespace MaestroUsb
             id = Id;
             ProductId = productId;
             maestro = new MaestroDevice(this);
-    }
+        }
 
+        /// <summary>
+        /// Destructor
+        /// </summary>
         ~MaestroDeviceListItem()
         {
             if (device != null)
@@ -162,6 +171,10 @@ namespace MaestroUsb
 
     }
 
+
+    /// <summary>
+    /// Maestro Device Manager holds a collection of meastro items
+    /// </summary>
     public class MaestroDeviceManager
     {
         private Collection<MaestroDeviceListItem> maestroDeviceList;
@@ -188,7 +201,9 @@ namespace MaestroUsb
         public event OnMaestroDeviceListReady deviceListReadyCallback;
 
 
-
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public MaestroDeviceManager()
         {
             // create new device list
@@ -196,7 +211,9 @@ namespace MaestroUsb
           //  OpenDeviceWatcher();
         }
 
-        //list built by class watchers
+        /// <summary>
+        /// DeviceList Property
+        /// </summary>
         public Collection<MaestroDeviceListItem> DeviceList
         {
             get
@@ -206,6 +223,9 @@ namespace MaestroUsb
         }
 
 
+        /// <summary>
+        /// Builds a List of Maestro Boards connected
+        /// </summary>
         public async void BuildDeviceList()
         {
               string deviceSelector = UsbDevice.GetDeviceSelector(DeviceInterfaceClass);
@@ -248,6 +268,11 @@ namespace MaestroUsb
 
         }
 
+        /// <summary>
+        /// Connects to a Maestro Board 
+        /// </summary>
+        /// <param name="deviceItem">MaestroDeviceListItem for Board to Connnect to</param>
+        /// <returns></returns>
         public async Task<Boolean> OpenDeviceAsync(MaestroDeviceListItem deviceItem)
         {
             Boolean successfullyOpenedDevice = false;
@@ -290,6 +315,11 @@ namespace MaestroUsb
             return successfullyOpenedDevice;
         }
 
+
+        /// <summary>
+        /// Close the connection to a connected Maestro Board
+        /// </summary>
+        /// <param name="deviceItem">MaestroDeviceListItem for board to disconnect</param>
         public void CloseDevice(MaestroDeviceListItem deviceItem)
         {
             bool match = maestroDeviceList.Contains(deviceItem);
@@ -306,7 +336,9 @@ namespace MaestroUsb
         }
 
 
-        // open device watchers for our class
+        /// <summary>
+        /// Open device event handlers
+        /// </summary>
         public void OpenDeviceWatchers()
         {
             deviceSelector = UsbDevice.GetDeviceSelector(DeviceInterfaceClass);
@@ -325,6 +357,11 @@ namespace MaestroUsb
         }
 
 
+        /// <summary>
+        /// Device removed callback called when a device is disconnected from a Usb port
+        /// </summary>
+        /// <param name="sender">DeviceWatcher</param>
+        /// <param name="args">DeviceInformationUpdate</param>
         private void OnDeviceRemoved(DeviceWatcher sender, DeviceInformationUpdate args)
         {
 
@@ -352,6 +389,7 @@ namespace MaestroUsb
                     if (x > -1)
                     {
                         maestroDeviceList.RemoveAt(x);
+                        // if we have a user callback set call it
                         if (deviceRemovedCallback != null)
                         {
                             deviceRemovedCallback(args);
@@ -361,6 +399,12 @@ namespace MaestroUsb
             }
         }
 
+
+        /// <summary>
+        /// Device Added callback called when a device is connected to a Usb port
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private async void OnDeviceAdded(DeviceWatcher sender, DeviceInformation args)
         {
             bool matched = false;
@@ -390,6 +434,7 @@ namespace MaestroUsb
                                 MaestroDeviceListItem maestroListItem = new MaestroDeviceListItem(usbDevice, args, args.Name, args.Id, Convert.ToUInt16(usbDevice.DeviceDescriptor.ProductId));
                                 maestroListItem.Connected = true;
                                 maestroDeviceList.Add(maestroListItem);
+                                // User call back
                                 if (deviceAddedCallback != null)
                                 {
                                     deviceAddedCallback(maestroListItem);
@@ -409,7 +454,11 @@ namespace MaestroUsb
              
         }
 
-
+        /// <summary>
+        /// Device stopped callback called when a device usb device stops working
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void OnDeviceStopped(DeviceWatcher sender, Object args)
         {
             if (deviceListReady)
@@ -430,6 +479,7 @@ namespace MaestroUsb
                     {
                         match.Connected = false;
                     }
+                    // user call back
                     if (deviceStoppedCallback != null)
                     {
                         deviceStoppedCallback(match);
@@ -438,6 +488,11 @@ namespace MaestroUsb
             }
         }
 
+        /// <summary>
+        /// Device Enumeration callback called when a device is fully enumerated from a Usb port
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void OnDeviceEnumerationComplete(DeviceWatcher sender, Object args)
         {
             if (deviceListReady)
@@ -453,7 +508,10 @@ namespace MaestroUsb
     }
 
 
-
+    /// <summary>
+    /// Main Maestro class contains most of the Pololu sdk functions modified to work with win uwp 
+    /// UsbDevice class
+    /// </summary>
     public class MaestroDevice
     {
         private byte servoParameterBytes = 9;
@@ -462,18 +520,28 @@ namespace MaestroUsb
         private MaestroVariables mVariables;
         private MicroMaestroVariables mMicroVariables;
         private ServoStatus[] mServoStatus;
+       // private ChannelSetting[] servosetting;
+        private UscSettings settings;
         private short[] stack;
         private ushort[] callstack;
         public const int MicroMaestroStackSize = 32;
         public const int MicroMaestroCallStackSize = 10;
-
         public const int MiniMaestroStackSize = 126;
         public const int MiniMaestroCallStackSize = 126;
         uint microVariablePacketSize;
         uint miniVariablePacketSize;
         private byte servoCount;
         public static UInt16[] DevicePids = { (UInt16)0x0089, (UInt16)0x008A, (UInt16)0x008B, (UInt16)0x008C };
-        
+        public Byte privateFirmwareVersionMajor = 0xFF;
+        public Byte privateFirmwareVersionMinor = 0xFF;
+        private ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
+        private ApplicationDataCompositeValue regSettings;
+        private string keyname;
+
+        /// <summary>
+        /// Constructor does some initialization 
+        /// </summary>
+        /// <param name="maestro"></param>
         public MaestroDevice(MaestroDeviceListItem maestro)
         {
             maestroDevice = maestro;
@@ -491,6 +559,10 @@ namespace MaestroUsb
             updateVariablePacketSize();
         }
 
+        /// <summary>
+        /// setsup usb packets sizes for getting setting varaiables 
+        /// this function is need as most of windows UsbDevice Calls are Async and cant use unsafe with Asysnc
+        /// </summary>
         public unsafe void updateVariablePacketSize()
         {
             microVariablePacketSize =(uint)(sizeof(MicroMaestroVariables) + servoCount * sizeof(ServoStatus));
@@ -498,7 +570,9 @@ namespace MaestroUsb
         }
 
 
-        // mini variables
+        /// <summary>
+        /// Mini Maestro Variables Property
+        /// </summary>
         public MaestroVariables MiniVariables
         {
             get
@@ -511,7 +585,9 @@ namespace MaestroUsb
             }
         }
 
-        // micro Variables
+        /// <summary>
+        /// micro Maestro Variables property
+        /// </summary>
         public MicroMaestroVariables MicroVariables
         {
             get
@@ -524,7 +600,27 @@ namespace MaestroUsb
             }
         }
 
-        // servo status array readonly
+        /// <summary>
+        /// Maximum script length property
+        /// </summary>
+        public ushort maxScriptLength
+        {
+            get
+            {
+                if (microMaestro)
+                {
+                    return 1024;
+                }
+                else
+                {
+                    return 8192;
+                }
+            }
+        }
+
+        /// <summary>
+        /// servo status array readonly
+        /// </summary>
         public ServoStatus[] servoStatus
         {
             get
@@ -533,8 +629,9 @@ namespace MaestroUsb
             }
         }
 
-
-        // call stack property
+        /// <summary>
+        /// call stack property
+        /// </summary>
         public ushort[] CallStack
         {
             get
@@ -548,7 +645,9 @@ namespace MaestroUsb
         }
 
 
-        // call stack property
+        /// <summary>
+        /// stack property
+        /// </summary>
         public short[] Stack
         {
             get
@@ -562,7 +661,9 @@ namespace MaestroUsb
         }
 
 
-        // servocount property readonly
+        /// <summary>
+        /// servo count property
+        /// </summary>
         public byte ServoCount
         {
             get
@@ -571,7 +672,9 @@ namespace MaestroUsb
             }
         }
 
-        // test if micro or mini true if micro
+        /// <summary>
+        ///  test if micro or mini true if micro
+        /// </summary>
         public bool microMaestro
         {
             get
@@ -579,8 +682,12 @@ namespace MaestroUsb
                 return servoCount == 6;
             }
         }
-       
 
+        /// <summary>
+        /// Exponential Speed to Noarmal Speed
+        /// </summary>
+        /// <param name="exponentialSpeed"></param>
+        /// <returns></returns>
         private static ushort exponentialSpeedToNormalSpeed(byte exponentialSpeed)
         {
             // Maximum value of normalSpeed is 31*(1<<7)=3968
@@ -591,6 +698,11 @@ namespace MaestroUsb
             return (ushort)(mantissa * (1 << exponent));
         }
 
+        /// <summary>
+        /// Normal Speed in us to Exponential Speed
+        /// </summary>
+        /// <param name="normalSpeed"></param>
+        /// <returns></returns>
         private static byte normalSpeedToExponentialSpeed(ushort normalSpeed)
         {
             ushort mantissa = normalSpeed;
@@ -616,11 +728,21 @@ namespace MaestroUsb
             }
         }
 
+        /// <summary>
+        /// position to us maestro has 0.25us steps
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public static decimal positionToMicroseconds(ushort position)
         {
             return (decimal)position / 4M;
         }
 
+        /// <summary>
+        /// converts 0.25 us position to us
+        /// </summary>
+        /// <param name="us"></param>
+        /// <returns></returns>
         public static ushort microsecondsToPosition(decimal us)
         {
             return (ushort)(us * 4M);
@@ -702,8 +824,16 @@ namespace MaestroUsb
         }
 
 
-
-     /*   protected async Task<UInt16> controlTransfer(byte requestType, byte request, ushort value, ushort index, byte[] data)
+        /// <summary>
+        /// Control Transfer function to handle writing arrays used in script
+        /// </summary>
+        /// <param name="requestType"></param>
+        /// <param name="request"></param>
+        /// <param name="value"></param>
+        /// <param name="index"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected async Task<UInt16> controlTransfer(byte requestType, byte request, ushort value, ushort index, byte[] data)
         {
             if (requestType == 0x40)
             {
@@ -724,7 +854,6 @@ namespace MaestroUsb
                         ControlTransferType = UsbControlTransferType.Vendor
                     },
                     Request = request,
-                    Value = value,
                     Index = index,
                     Length = bufferToSend.Length
                 };
@@ -734,55 +863,19 @@ namespace MaestroUsb
             }
             if (requestType == 0xC0)
             {
-                // read
-                try
-                {
-                    UInt16 packetSize = Convert.ToUInt16(data.Length);
-                    UInt16 retValue;
-                    // Data will be written to this buffer when we receive it
-                    var buffer = new Windows.Storage.Streams.Buffer(packetSize);
-
-                    UsbSetupPacket setupPacket = new UsbSetupPacket
-                    {
-                        RequestType = new UsbControlRequestType
-                        {
-                            Direction = UsbTransferDirection.In,
-                            Recipient = UsbControlRecipient.Device,
-                            ControlTransferType = UsbControlTransferType.Vendor,
-                        },
-                        Request = request,
-                        Value = value,
-                        Index = index,
-                        Length = packetSize
-                    };
-
-                    IBuffer retbuffer = await maestroDevice.device.SendControlInTransferAsync(setupPacket, buffer);
-                    DataReader reader = DataReader.FromBuffer(retbuffer);
-                    if (retbuffer.Length == 1)
-                    {
-                        retValue = Convert.ToUInt16(reader.ReadByte());
-                    }
-                    else
-                    if (retbuffer.Length == 2)
-                    {
-                        retValue = reader.ReadUInt16();
-                    }
-                    else
-                        retValue = 0;  // actually an error
-
-                    return retValue;
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e);
-                    return 0;  // we return a buffer with the wrong size it will then be ignored higher up
-
-                }
+                
             }
             return 0;// dummy get rid of when coded
-        }*/
+        }
 
-
+        /// <summary>
+        /// Control transfer used to take a ushort value and index 
+        /// used by setTarget , setSpeed , setAcceleration
+        /// </summary>
+        /// <param name="requestType"></param>
+        /// <param name="request"></param>
+        /// <param name="value"></param>
+        /// <param name="index"></param>
         protected async void controlTransfer(byte requestType, byte request, ushort value, ushort index)
         {
 
@@ -825,16 +918,25 @@ namespace MaestroUsb
         }
 
         
-
+        /// <summary>
+        /// convert a byte to serialmode
+        /// </summary>
+        /// <param name="modebyte"></param>
+        /// <returns></returns>
         private uscSerialMode bytetoSerialMode(byte modebyte)
         {
             return (uscSerialMode)(modebyte);
         }
 
+        /// <summary>
+        /// get all the uscSettings from the Maestro Board
+        /// </summary>
+        /// <returns></returns>
         public async Task<UscSettings> getUscSettings()
         {
-            UscSettings settings = new UscSettings();
-           
+            settings = new UscSettings();
+            string fname = ApplicationData.Current.LocalFolder.Path + "\\" + maestroDevice.Id;
+
             settings.serialMode = (uscSerialMode)( await getRawParameter(uscParameter.PARAMETER_SERIAL_MODE));
             settings.fixedBaudRate = convertSpbrgToBps(await getRawParameter(uscParameter.PARAMETER_SERIAL_FIXED_BAUD_RATE));
             settings.enableCrc = await getRawParameter(uscParameter.PARAMETER_SERIAL_ENABLE_CRC) != 0;
@@ -934,15 +1036,66 @@ namespace MaestroUsb
 
                 settings.channelSettings.Add(setting);
             }
+            
+            if (File.Exists(fname))
+            {
+                // Get names for servos from the registry.
+                XmlDocument settingsFile = new XmlDocument();
+                settingsFile.Load(File.OpenRead(fname));
+                for (byte i = 0; i < servoCount; i++)
+                {
+                    settings.channelSettings[i].name = "";
+                    if ( settingsFile != null)
+                    {
+                        if (settingsFile.Attributes[i].Name.Contains("servoNames"))
+                        {
+                            settings.channelSettings[i].name = settingsFile.Attributes[i].Value.ToString(); // example value
+                        }
+                    }
+                }
 
-           
+                // Get the script from the registry
+                if (localSettings.Containers.ContainsKey("script"))
+                {
+                    string script = localSettings.Containers["script"].ToString();
+                    try
+                    {
+                        // compile it to get the checksum
+                        settings.setAndCompileScript(script);
+
+                        BytecodeProgram program = settings.bytecodeProgram;
+                        if (program.getByteList().Count > this.maxScriptLength)
+                        {
+                            throw new Exception();
+                        }
+                        if (program.getCRC() != (ushort)await getRawParameter(uscParameter.PARAMETER_SCRIPT_CRC))
+                        {
+                            throw new Exception();
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // no script found or error compiling - leave script at ""
+                        settings.scriptInconsistent = true;
+                    }
+
+                    // Get the sequences from the registry.
+                    settings.sequences = Pololu.Usc.Sequencer.Sequence.readSequencesFromRegistry(settingsFile,fname, servoCount);
+                }
+            }
+
+
             return settings;
         }
 
-
+        /// <summary>
+        /// send all the settings to the board
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <param name="newScript"></param>
         public async void setUscSettings(UscSettings settings, bool newScript)
         {
-            
+            string fname = ApplicationData.Current.LocalFolder.Path + "\\" + maestroDevice.Id;
             await setRawParameter(uscParameter.PARAMETER_SERIAL_MODE, (byte)settings.serialMode);
             await setRawParameter(uscParameter.PARAMETER_SERIAL_FIXED_BAUD_RATE, convertBpsToSpbrg(settings.fixedBaudRate));
             await setRawParameter(uscParameter.PARAMETER_SERIAL_ENABLE_CRC, (ushort)(settings.enableCrc ? 1 : 0));
@@ -983,39 +1136,49 @@ namespace MaestroUsb
                 await setRawParameter(uscParameter.PARAMETER_ENABLE_PULLUPS, (ushort)(settings.enablePullups ? 1 : 0));
             }
 
-           
-
+            // registry not support so we now use an xml file
+            // if it exists delete and then creat a new xml doc
+            if (File.Exists(fname))
+            {
+                File.Delete(fname);
+            }
+            XmlDocument settingsFile = new XmlDocument();
+            
             byte ioMask = 0;
             byte outputMask = 0;
             byte[] channelModeBytes = new byte[6] { 0, 0, 0, 0, 0, 0 };
 
             for (byte i = 0; i < servoCount; i++)
             {
-                ChannelSetting setting = settings.channelSettings[i];
-                setting.name = "";  // don't support naming yet
+                
+               // servosetting.name = "";  // don't support naming yet
+                XmlAttribute attr = settingsFile.CreateAttribute("servoName" + i.ToString("d2"));
+                attr.Value = settings.channelSettings[i].name;
+                
+               // regSettings.Add("servoName" + i.ToString("d2"), servosetting.name);
                 //key.SetValue("servoName" + i.ToString("d2"), setting.name, RegistryValueKind.String);
 
                 if (microMaestro)
                 {
-                    if (setting.mode == ChannelMode.Input || setting.mode == ChannelMode.Output)
+                    if (settings.channelSettings[i].mode == ChannelMode.Input || settings.channelSettings[i].mode == ChannelMode.Output)
                     {
                         ioMask |= (byte)(1 << channelToPort(i));
                     }
 
-                    if (setting.mode == ChannelMode.Output)
+                    if (settings.channelSettings[i].mode == ChannelMode.Output)
                     {
                         outputMask |= (byte)(1 << channelToPort(i));
                     }
                 }
                 else
                 {
-                    channelModeBytes[i >> 2] |= (byte)((byte)setting.mode << ((i & 3) << 1));
+                    channelModeBytes[i >> 2] |= (byte)((byte)settings.channelSettings[i].mode << ((i & 3) << 1));
                 }
 
                 // Make sure that HomeMode is "Ignore" for inputs.  This is also done in
                 // fixUscSettings.
-                HomeMode correctedHomeMode = setting.homeMode;
-                if (setting.mode == ChannelMode.Input)
+                HomeMode correctedHomeMode = settings.channelSettings[i].homeMode;
+                if (settings.channelSettings[i].mode == ChannelMode.Input)
                 {
                     correctedHomeMode = HomeMode.Ignore;
                 }
@@ -1024,15 +1187,15 @@ namespace MaestroUsb
                 ushort home;
                 if (correctedHomeMode == HomeMode.Off) home = 0;
                 else if (correctedHomeMode == HomeMode.Ignore) home = 1;
-                else home = setting.home;
+                else home = settings.channelSettings[i].home;
                 await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_HOME, i), home);
 
-                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_MIN, i), (ushort)(setting.minimum / 64));
-                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_MAX, i), (ushort)(setting.maximum / 64));
-                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_NEUTRAL, i), setting.neutral);
-                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_RANGE, i), (ushort)(setting.range / 127));
-                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_SPEED, i), normalSpeedToExponentialSpeed(setting.speed));
-                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_ACCELERATION, i), setting.acceleration);
+                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_MIN, i), (ushort)(settings.channelSettings[i].minimum / 64));
+                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_MAX, i), (ushort)(settings.channelSettings[i].maximum / 64));
+                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_NEUTRAL, i), settings.channelSettings[i].neutral);
+                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_RANGE, i), (ushort)(settings.channelSettings[i].range / 127));
+                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_SPEED, i), normalSpeedToExponentialSpeed(settings.channelSettings[i].speed));
+                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_ACCELERATION, i), settings.channelSettings[i].acceleration);
             }
 
             if (microMaestro)
@@ -1048,10 +1211,56 @@ namespace MaestroUsb
                 }
             }
 
-           
+            if (newScript)
+            {
+                setScriptDone(1); // stop the script
+
+                // load the new script
+                BytecodeProgram program = settings.bytecodeProgram;
+                List<byte> byteList = program.getByteList();
+                if (byteList.Count > maxScriptLength)
+                {
+                    throw new Exception("Script too long for device (" + byteList.Count + " bytes)");
+                }
+                if (byteList.Count < maxScriptLength)
+                {
+                    // if possible, add QUIT to the end to prevent mysterious problems with
+                    // unterminated scripts
+                    byteList.Add((byte)Opcode.QUIT);
+                }
+                eraseScript();
+                setSubroutines(program.subroutineAddresses, program.subroutineCommands);
+                writeScript(byteList);
+                await setRawParameter(uscParameter.PARAMETER_SCRIPT_CRC, program.getCRC());
+
+                // Save the script in the registry
+                XmlAttribute attr = settingsFile.CreateAttribute("script");
+                attr.Value = settings.script;
+            }
+
+            Pololu.Usc.Sequencer.Sequence.saveSequencesInRegistry(settings.sequences, settingsFile,fname);
+
+
         }
 
+        /// <summary>
+        /// Opens the local registry file
+        /// windows store , uwp and iot device do not support regestry access
+        /// this function is only here as a stop gap and will change so use with caution
+        /// </summary>
+        private void openRegistryKey()
+        {
+            
+            keyname = "Software\\Pololu\\Maestro USB servo controller\\" + maestroDevice.productId.ToString();
+            regSettings = (ApplicationDataCompositeValue)localSettings.Values[keyname];
 
+        }
+
+        /// <summary>
+        /// Sets the Servo Parameters within the Usc Settings
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <param name="Channel"></param>
         public async void setServoParameters(UscSettings settings, byte Channel)
         {
             byte ioMask = 0;
@@ -1113,6 +1322,11 @@ namespace MaestroUsb
             return (uint)sizeof(MaestroVariables);
         }
 
+
+        /// <summary>
+        /// read the Variables from a mini maestro
+        /// </summary>
+        /// <returns></returns>
         private async Task<MaestroVariables> getVariablesMiniMaestro()
         {
             try
@@ -1145,7 +1359,10 @@ namespace MaestroUsb
         }
 
 
-        //todo: change this to return bool as the micro one does
+       /// <summary>
+       /// reads the servo variables from maestro
+       /// </summary>
+       /// <returns></returns>
         private async Task<ServoStatus[]> getServosMiniMaestro()
         {
             try
@@ -1176,6 +1393,10 @@ namespace MaestroUsb
             return (uint)(sizeof(MicroMaestroVariables) + servoCount * sizeof(ServoStatus));
         }
 
+        /// <summary>
+        /// read variables from micro maestro
+        /// </summary>
+        /// <returns></returns>
         private async Task<bool> getVariablesMicroMaestro()
         {
             try
@@ -1222,50 +1443,75 @@ namespace MaestroUsb
             }
         }
 
+
+        /// <summary>
+        /// read the mini mastro stack
+        /// </summary>
+        /// <returns></returns>
         private async Task<short[]> getStackMiniMaestro()
         {
             try
             {
-                // Get the data stack.
+                // set stack to maximumsize.
                 short[] stack = new short[MiniMaestroStackSize];
-                IBuffer buffer = await miniMaestroControlTransfer((byte)uscRequest.REQUEST_GET_STACK, (uint)(2* MiniMaestroStackSize));
+                // try and read a full stack worth of data
+                IBuffer buffer = await miniMaestroControlTransfer((byte)uscRequest.REQUEST_GET_STACK, (uint)(sizeof(short) * MiniMaestroStackSize));
+                // setup a datareader
                 DataReader reader = DataReader.FromBuffer(buffer);
-                for (int i = 0;i < stack.Length; i++)
+                // copy the number of unsigned  shorts read into callstack array
+                for (int i = 0;i < (buffer.Length / sizeof(short)); i++)
                 {
                     stack[i] = reader.ReadInt16();
                 }
-
+                // resize the stack to size used
+                Array.Resize<short>(ref stack, (int)(buffer.Length / sizeof(short)));
                 return stack;
 
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e);
+                Debug.WriteLine("error reading stack variables "+e);
                 return new short[MiniMaestroStackSize];
             }
         }
 
+        /// <summary>
+        /// Read the MiniMaestro Call Stack
+        /// </summary>
+        /// <returns></returns>
         private async Task<ushort[]> getCallStackMiniMaestro()
         {
             try
             {
+                // set callstack to maximum size 
                 ushort[] callStack = new ushort[MiniMaestroCallStackSize];
-                IBuffer buffer = await miniMaestroControlTransfer((byte)uscRequest.REQUEST_GET_CALL_STACK, (uint)(2 * MiniMaestroCallStackSize));
+                // try and read a full callstack worth of data
+                IBuffer buffer = await miniMaestroControlTransfer((byte)uscRequest.REQUEST_GET_CALL_STACK, (uint)(sizeof(ushort) * MiniMaestroCallStackSize));
+                // setup a datareader
                 DataReader reader = DataReader.FromBuffer(buffer);
-                for (int i = 0; i < callStack.Length; i++)
+                // copy the number of unsigned  shorts read into callstack array
+                for (int i = 0; i < (buffer.Length /sizeof(ushort)); i++)
                 {
                     callStack[i] = reader.ReadUInt16();
                 }
+                Array.Resize<ushort>(ref callStack, (int)(buffer.Length / sizeof(ushort)));
                 return callStack;
 
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e);
+                Debug.WriteLine("error reading callstack variables "+e);
                 return new ushort[MiniMaestroCallStackSize];
             }
         }
 
+
+        /// <summary>
+        /// Mini Meastro Variables control transfer
+        /// </summary>
+        /// <param name="uscrequest"></param>
+        /// <param name="packetSize"></param>
+        /// <returns></returns>
         public async Task<IBuffer> miniMaestroControlTransfer(byte uscrequest, uint packetSize)
         {
             try
@@ -1292,6 +1538,13 @@ namespace MaestroUsb
             }
         }
 
+
+        /// <summary>
+        /// micro maestro read variable ControlTransfer
+        /// </summary>
+        /// <param name="uscrequest"></param>
+        /// <param name="packetSize"></param>
+        /// <returns></returns>
         public async Task<IBuffer> microMaestroControlTransfer(byte uscrequest, uint packetSize)
         {
             try
@@ -1319,6 +1572,10 @@ namespace MaestroUsb
             }
         }
 
+
+        /// <summary>
+        /// read maestro variables 
+        /// </summary>
         public async void getMaestroVariables()
         {
             try
@@ -1350,8 +1607,103 @@ namespace MaestroUsb
             }
         }
 
-        
+        /// <summary>
+        /// get firmware Majorversion
+        /// </summary>
+        public UInt16 firmwareVersionMajor
+        {
+            get
+            {
+                if (privateFirmwareVersionMajor == 0xFF)
+                {
+                    getFirmwareVersion();
+                }
+                return privateFirmwareVersionMajor;
+            }
+        }
 
+
+        /// <summary>
+        /// get firmawre Minor version
+        /// </summary>
+        public Byte firmwareVersionMinor
+        {
+            get
+            {
+                if (privateFirmwareVersionMajor == 0xFF)
+                {
+                    getFirmwareVersion();
+                }
+                return privateFirmwareVersionMinor;
+            }
+        }
+
+        /// <summary>
+        /// firmware version as a string
+        /// </summary>
+        public String firmwareVersionString
+        {
+            get
+            {
+                return firmwareVersionMajor.ToString() + "." + firmwareVersionMinor.ToString("D2");
+            }
+        }
+
+
+        /// <summary>
+        /// Read firmware version from the board
+        /// </summary>
+        private async void getFirmwareVersion()
+        {
+            Byte[] bytebuffer = new Byte[14];
+
+            try
+            {
+                var buffer = new Windows.Storage.Streams.Buffer(14);
+                UsbSetupPacket setupPacket = new UsbSetupPacket
+                {
+                    RequestType = new UsbControlRequestType
+                    {
+                        Direction = UsbTransferDirection.In,
+                        Recipient = UsbControlRecipient.Device,
+                        ControlTransferType = UsbControlTransferType.Vendor,
+                    },
+                    Request = (byte)0x06,
+                    Value = 0x0100,
+                    Length = 14
+                };
+
+                IBuffer retBuffer = await maestroDevice.device.SendControlInTransferAsync(setupPacket, buffer);
+                DataReader reader = DataReader.FromBuffer(retBuffer);
+                //controlTransfer(0x80, 6, 0x0100, 0x0000, buffer);
+                if (retBuffer.Length == bytebuffer.Length)
+                {
+                    for(int i=0;i < retBuffer.Length;i++)
+                    {
+                        bytebuffer[i] = reader.ReadByte();
+                    }
+                    privateFirmwareVersionMinor = (Byte)((bytebuffer[12] & 0xF) + (bytebuffer[12] >> 4 & 0xF) * 10);
+                    privateFirmwareVersionMajor = (Byte)((bytebuffer[13] & 0xF) + (bytebuffer[13] >> 4 & 0xF) * 10);
+                }
+                else
+                {
+                    throw new Exception("There was an error getting the firmware version from the device.");
+                }
+            }
+            catch (Exception exception)
+            {
+                throw new Exception("There was an error getting the firmware version from the device.", exception);
+            }
+
+            
+        }
+
+
+        /// <summary>
+        /// servo setTarget
+        /// </summary>
+        /// <param name="servo">channel number</param>
+        /// <param name="value">new position in us</param>
         public void setTarget(byte servo, ushort value)
         {
             try
@@ -1364,6 +1716,12 @@ namespace MaestroUsb
             }
         }
 
+
+        /// <summary>
+        /// set the speed of the servo
+        /// </summary>
+        /// <param name="servo"></param>
+        /// <param name="value"></param>
         public void setSpeed(byte servo, ushort value)
         {
             try
@@ -1376,6 +1734,12 @@ namespace MaestroUsb
             }
         }
 
+
+        /// <summary>
+        /// set servo acceleration
+        /// </summary>
+        /// <param name="servo"></param>
+        /// <param name="value"></param>
         public void setAcceleration(byte servo, ushort value)
         {
             // set the high bit of servo to specify acceleration
@@ -1389,6 +1753,229 @@ namespace MaestroUsb
                 throw new Exception("Failed to set acceleration of servo " + servo + " to " + value + ".", e);
             }
         }
+
+        /// <summary>
+        /// Erases the entire script and subroutine address table from the devices.
+        /// </summary>
+        public void eraseScript()
+        {
+            try
+            {
+                controlTransfer(0x40, (byte)uscRequest.REQUEST_ERASE_SCRIPT, 0, 0);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("There was an error erasing the script.", e);
+            }
+        }
+
+        /// <summary>
+        /// restart script at subroutine  with a parameter
+        /// </summary>
+        /// <param name="subroutine"></param>
+        /// <param name="parameter"></param>
+        public void restartScriptAtSubroutineWithParameter(byte subroutine, short parameter)
+        {
+            try
+            {
+                controlTransfer(0x40, (byte)uscRequest.REQUEST_RESTART_SCRIPT_AT_SUBROUTINE_WITH_PARAMETER, (ushort)parameter, subroutine);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("There was an error restarting the script with a parameter at subroutine " + subroutine + ".", e);
+            }
+        }
+
+
+        public void restartScriptAtSubroutine(byte subroutine)
+        {
+            try
+            {
+                controlTransfer(0x40, (byte)uscRequest.REQUEST_RESTART_SCRIPT_AT_SUBROUTINE, 0, subroutine);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("There was an error restarting the script at subroutine " + subroutine + ".", e);
+            }
+        }
+
+        public void restartScript()
+        {
+            try
+            {
+                controlTransfer(0x40, (byte)uscRequest.REQUEST_RESTART_SCRIPT, 0, 0);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("There was an error restarting the script.", e);
+            }
+        }
+
+        /// <summary>
+        /// Write Script to Meastro 
+        /// Not fully tested 
+        /// </summary>
+        /// <param name="bytecode"></param>
+        public async void writeScript(List<byte> bytecode)
+        {
+            ushort block;
+            for (block = 0; block < (bytecode.Count + 15) / 16; block++)
+            {
+                // write each block in a separate request
+                byte[] block_bytes = new byte[16];
+
+                ushort j;
+                for (j = 0; j < 16; j++)
+                {
+                    if (block * 16 + j < bytecode.Count)
+                        block_bytes[j] = bytecode[block * 16 + j];
+                    else
+                        block_bytes[j] = (byte)0xFF; // don't change flash if it is not necessary
+                }
+
+                try
+                {
+                    //                    System.Console.WriteLine((block)+": "+block_bytes[0]+" "+block_bytes[1]+" "+block_bytes[2]+" "+block_bytes[3]+" "+block_bytes[4]+" "+block_bytes[5]+" "+block_bytes[6]+" "+block_bytes[7]+" "+block_bytes[8]+" "+block_bytes[9]+" "+block_bytes[10]+" "+block_bytes[11]+" "+block_bytes[12]+" "+block_bytes[13]+" "+block_bytes[14]+" "+block_bytes[15]); // XXX
+                    await controlTransfer(0x40, (byte)uscRequest.REQUEST_WRITE_SCRIPT, 0, block,
+                                           block_bytes);
+                }
+                catch (Exception e)
+                {
+                    throw new Exception("There was an error writing script block " + block + ".", e);
+                }
+            }
+        }
+
+        /// <remarks>
+        /// Prior to 2011-7-20, this function had a bug in it that made
+        /// subroutines 64-123 not work!
+        /// </remarks>
+        public async void setSubroutines(Dictionary<string, ushort> subroutineAddresses,
+                                   Dictionary<string, byte> subroutineCommands)
+        {
+            byte[] subroutineData = new byte[256];
+
+            ushort i;
+            for (i = 0; i < 256; i++)
+                subroutineData[i] = 0xFF; // initialize to the default flash state
+
+            foreach (KeyValuePair<string, ushort> kvp in subroutineAddresses)
+            {
+                string name = kvp.Key;
+                byte bytecode = subroutineCommands[name];
+
+                if (bytecode == (byte)Opcode.CALL)
+                    continue; // skip CALLs - these do not get a position in the subroutine memory
+
+                subroutineData[2 * (bytecode - 128)] = (byte)(kvp.Value % 256);
+                subroutineData[2 * (bytecode - 128) + 1] = (byte)(kvp.Value >> 8);
+            }
+
+            ushort block;
+            for (block = 0; block < 16; block++)
+            {
+                // write each block in a separate request
+                byte[] block_bytes = new byte[16];
+
+                ushort j;
+                for (j = 0; j < 16; j++)
+                {
+                    block_bytes[j] = subroutineData[block * 16 + j];
+                }
+
+                try
+                {
+                    
+                    //                    System.Console.WriteLine((block + subroutineOffsetBlocks)+": "+block_bytes[0]+" "+block_bytes[1]+" "+block_bytes[2]+" "+block_bytes[3]+" "+block_bytes[4]+" "+block_bytes[5]+" "+block_bytes[6]+" "+block_bytes[7]+" "+block_bytes[8]+" "+block_bytes[9]+" "+block_bytes[10]+" "+block_bytes[11]+" "+block_bytes[12]+" "+block_bytes[13]+" "+block_bytes[14]+" "+block_bytes[15]); // XXX
+                    await controlTransfer(0x40, (byte)uscRequest.REQUEST_WRITE_SCRIPT, 0,
+                                           (ushort)(block + subroutineOffsetBlocks),
+                                           block_bytes);
+                }
+                catch (Exception e)
+                {
+                    throw new Exception("There was an error writing subroutine block " + block + ".", e);
+                }
+            }
+        }
+
+
+        private uint subroutineOffsetBlocks
+        {
+            get
+            {
+                switch (maestroDevice.productId)
+                {
+                    case 0x89: return 64;
+                    case 0x8A: return 512;
+                    case 0x8B: return 512;
+                    case 0x8C: return 512;
+                    default: throw new Exception("unknown product ID");
+                }
+            }
+        }
+
+        public void setScriptDone(byte value)
+        {
+            try
+            {
+                controlTransfer(0x40, (byte)uscRequest.REQUEST_SET_SCRIPT_DONE, value, 0);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("There was an error setting the script done.", e);
+            }
+        }
+
+        public void startBootloader()
+        {
+            try
+            {
+                controlTransfer(0x40, (byte)uscRequest.REQUEST_START_BOOTLOADER, 0, 0);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("There was an error entering bootloader mode.", e);
+            }
+        }
+
+        public void reinitialize()
+        {
+            reinitialize(50);
+        }
+
+
+        private void reinitialize(int waitTime)
+        {
+            try
+            {
+                controlTransfer(0x40, (byte)uscRequest.REQUEST_REINITIALIZE, 0, 0);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("There was an error re-initializing the device.", e);
+            }
+
+            Task.Delay(waitTime);
+            if (!microMaestro)
+            {
+                // Flush out any spurious performance flags that might have occurred.
+                getMaestroVariables();
+            }
+        }
+
+        public void clearErrors()
+        {
+            try
+            {
+                controlTransfer(0x40, (byte)uscRequest.REQUEST_CLEAR_ERRORS, 0, 0);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("There was a USB communication error while clearing the servo errors.", e);
+            }
+        }
+
+
 
         private async Task<uint> setRawParameter(uscParameter parameter, ushort value)
         {
@@ -1488,7 +2075,7 @@ namespace MaestroUsb
                     Index = (UInt16)parameter,
                     Length = range.bytes
                 };
-                return await  maestroDevice.device.SendControlInTransferAsync(setupPacket, buffer);
+                return await maestroDevice.device.SendControlInTransferAsync(setupPacket, buffer);
             }
             catch (Exception e)
             {
@@ -1498,43 +2085,7 @@ namespace MaestroUsb
             }
         }
 
-        private async Task<byte[]> SendVendorControlTransferArrayInAsync(uscRequest parameter,byte[] dataarray)
-        {
-            try
-            {
-                
-                ushort arraySize = (ushort)(dataarray.Length);
-                byte[] array = new byte[arraySize];
-                // Data will be written to this buffer when we receive it
-                var buffer = new Windows.Storage.Streams.Buffer(arraySize);
-
-
-                UsbSetupPacket setupPacket = new UsbSetupPacket
-                {
-                    RequestType = new UsbControlRequestType
-                    {
-                        Direction = UsbTransferDirection.In,
-                        Recipient = UsbControlRecipient.Device,
-                        ControlTransferType = UsbControlTransferType.Vendor,
-                    },
-                    Request = (byte)parameter,
-                    Value = 0,
-                    Index = 0,
-                    Length = arraySize
-                };
-                IBuffer retBuffer = await maestroDevice.device.SendControlInTransferAsync(setupPacket, buffer);
-                DataReader reader = DataReader.FromBuffer(retBuffer); 
-                reader.ReadBytes(array);
-                return array;
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("oops" + e.Message);
-                // todo fix this kludge 
-                return null;
-            }
-        }
-
+       
         private static void requireArgumentRange(uint argumentValue, Int32 minimum, Int32 maximum, String argumentName)
         {
             if (argumentValue < minimum || argumentValue > maximum)

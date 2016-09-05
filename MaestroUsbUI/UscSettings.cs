@@ -1,4 +1,6 @@
 ﻿using MaestroUsb;
+using Pololu.Usc.Bytecode;
+using Pololu.Usc.Sequencer;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -137,7 +139,8 @@ namespace Pololu.Usc
         public bool scriptInconsistent = false;
 
         private string privateScript = null;
-      //  private BytecodeProgram privateProgram;
+
+        private BytecodeProgram privateProgram;
 
         public string script
         {
@@ -172,12 +175,15 @@ namespace Pololu.Usc
             }
         }
 
-    	//public List<Sequence> sequences = new List<Sequence>();
+    	public List<Sequence> sequences = new List<Sequence>();
 
-      //  public BytecodeProgram bytecodeProgram
-        //{
-       //     get { return privateProgram; }
-        //}
+        public BytecodeProgram bytecodeProgram
+        {
+            get
+            {
+                return privateProgram;
+            }
+        }
 
         public UscSettings()
         {

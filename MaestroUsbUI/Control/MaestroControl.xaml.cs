@@ -15,7 +15,7 @@ namespace MaestroUsbUI
 {
     public sealed partial class MaestroControl : UserControl
     {
-        private UInt16 speed = 0;
+        private Int16 speed = 0;
         private UInt16 acceleration = 0;
         private UInt16 channel = 0;
         private UInt16 position = 1500;
@@ -55,11 +55,11 @@ namespace MaestroUsbUI
         {
             get
             {
-                return speed;
+                return Convert.ToUInt16(speed);
             }
             set
             {
-                speed = value;
+                speed = Convert.ToInt16(value);
                 speedValue.Text = speed.ToString();
             }
         }
@@ -134,7 +134,7 @@ namespace MaestroUsbUI
 
         private void speedDown_PointerPressed(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            if (speed > 0)
+            if (speed > -1)
             {
                 speed--;
                 speedValue.Text = speed.ToString();
@@ -167,10 +167,10 @@ namespace MaestroUsbUI
             }
             else
             {
-                speed = UInt16.Parse(speedValue.Text);
+                speed = Int16.Parse(speedValue.Text);
                 if (speedChanged != null)
                 {
-                    speedChanged(Convert.ToByte(channel), speed);
+                    speedChanged(Convert.ToByte(channel),Convert.ToUInt16( speed));
                 }
             }
         }
