@@ -39,7 +39,7 @@
 
             </ComboBox>
             <TextBlock x:Name="tbRate"
-                       Margin="5,0,0,0"
+                       Margin="5,0"
                        VerticalAlignment="Center"
                        Text="50"
                        TextWrapping="Wrap" />

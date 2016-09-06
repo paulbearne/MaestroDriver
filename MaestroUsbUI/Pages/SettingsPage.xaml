@@ -1,0 +1,85 @@
+﻿<Page x:Class="MaestroUsbUI.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:Control="using:MaestroUsbUI.Control"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:local="using:MaestroUsbUI"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <StackPanel x:Name="MainPanel"
+                    Margin="0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Orientation="Vertical">
+            <StackPanel Height="35"
+                        Margin="0,0,0,0"
+                        VerticalAlignment="Top"
+                        Orientation="Horizontal">
+                <TextBlock x:Name="tbChannel"
+                           Margin="5,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="Ch"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="tbName"
+                           Margin="20,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="Name"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="textBlock"
+                           Margin="60,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="Mode"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="textBlock1"
+                           Margin="50,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="Rate"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="textBlock2"
+                           Margin="40,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="Min"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="textBlock3"
+                           Margin="60,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="Max"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="textBlock4"
+                           Margin="60,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="On Startup or Error"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="textBlock5"
+                           Margin="75,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="Speed"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="textBlock6"
+                           Margin="25,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="Acceleration"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="textBlock7"
+                           Margin="10,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="8bit Neutral"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="textBlock8"
+                           Margin="5,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="8bit Range+-"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+            <ScrollViewer Width="1024" Height="Auto">
+                <StackPanel Name="ControlPanel" Orientation="Vertical">
+                    
+                </StackPanel>
+                
+            </ScrollViewer>
+
+        </StackPanel>
+    </Grid>
+</Page>

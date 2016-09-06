@@ -27,7 +27,7 @@ namespace MaestroUsbUI.Control
         private UInt16 target = 1500;
         private UInt16 min = 1000;
         private UInt16 max = 2500;
-        private UInt16 range = 984;
+        private Int16 range = 984;
         private UInt16 nuetral8b = 1500;
         private ChannelMode mode = ChannelMode.Servo;
         private HomeMode homemode = HomeMode.Off;
@@ -47,7 +47,7 @@ namespace MaestroUsbUI.Control
         public delegate void OnMaxChanged(byte Channel, UInt16 newMax);
         public event OnMaxChanged maximumChanged;
 
-        public delegate void OnRangeChanged(byte Channel, UInt16 newRange);
+        public delegate void OnRangeChanged(byte Channel, Int16 newRange);
         public event OnRangeChanged rangeChanged;
 
         public delegate void OnNuetralChanged(byte Channel, UInt16 newNuetral);
@@ -359,7 +359,7 @@ namespace MaestroUsbUI.Control
             }
             else
             {
-                range = UInt16.Parse(spRange8b.Text);
+                range = Int16.Parse(spRange8b.Text);
                 if (rangeChanged != null)
                 {
                    rangeChanged(Convert.ToByte(channel), range);
@@ -378,7 +378,7 @@ namespace MaestroUsbUI.Control
 
         private void range8bDown_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
-            if (range > 0)
+            if (range > -9999)
             {
                 range--;
                 spRange8b.Text = range.ToString();
