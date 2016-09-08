@@ -4,13 +4,13 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="using:MaestroUsbUI.Control"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             d:DesignHeight="35"
+             d:DesignHeight="40"
              d:DesignWidth="1024"
              mc:Ignorable="d">
 
     <Grid>
         <StackPanel Width="1024"
-                    Height="35"
+                    Height="40"
                     Margin="0,0,0,0"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
@@ -21,21 +21,23 @@
                        Text="#0"
                        TextWrapping="Wrap" />
             <TextBox x:Name="tbName"
-                     Height="34"
+                     Height="40"
                      Margin="5,0,0,1"
+                     HorizontalAlignment="Center"
                      VerticalAlignment="Center"
                      Text="TextBox"
                      TextWrapping="Wrap" />
             <ComboBox x:Name="cbMode"
-                      Width="120"
+                      Width="100"
                       Margin="5,0,0,0"
                       HorizontalAlignment="Stretch"
                       VerticalAlignment="Stretch"
                       SelectedIndex="0"
                       SelectionChanged="cbMode_SelectionChanged">
                 <ComboBoxItem Content="Servo" />
-                <ComboBoxItem Content="Input" />
+                <ComboBoxItem Content="Servo Multiplied" />
                 <ComboBoxItem Content="Output" />
+                <ComboBoxItem Content="Input" />
 
             </ComboBox>
             <TextBlock x:Name="tbRate"
@@ -43,14 +45,17 @@
                        VerticalAlignment="Center"
                        Text="50"
                        TextWrapping="Wrap" />
-            <StackPanel Height="35"
+            <StackPanel Height="40"
                         Margin="5,0,0,0"
+                        BorderBrush="Black"
+                        BorderThickness="1"
                         Orientation="Horizontal"
                         Padding="2,0,0,0">
                 <TextBox x:Name="spMin"
                          Width="50"
-                         HorizontalAlignment="Left"
+                         HorizontalAlignment="Center"
                          VerticalAlignment="Center"
+                         BorderBrush="{x:Null}"
                          BorderThickness="1"
                          InputScope="Number"
                          IsSpellCheckEnabled="False"
@@ -59,7 +64,10 @@
                          TextChanged="spMin_TextChanged"
                          TextWrapping="Wrap" />
 
-                <StackPanel Margin="5,0,0,0" Orientation="Vertical">
+                <StackPanel Margin="2,0,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Vertical">
                     <Image Name="minUp"
                            Width="20"
                            Height="17"
@@ -72,14 +80,17 @@
                            Source="btndown.png" />
                 </StackPanel>
             </StackPanel>
-            <StackPanel Height="35"
+            <StackPanel Height="40"
                         Margin="5,0,0,0"
+                        BorderBrush="Black"
+                        BorderThickness="1"
                         Orientation="Horizontal">
                 <TextBox x:Name="spMax"
                          Width="50"
                          Margin="0"
-                         HorizontalAlignment="Left"
+                         HorizontalAlignment="Center"
                          VerticalAlignment="Center"
+                         BorderBrush="{x:Null}"
                          BorderThickness="1"
                          InputScope="Number"
                          IsSpellCheckEnabled="False"
@@ -88,7 +99,10 @@
                          TextChanged="spMax_TextChanged"
                          TextWrapping="Wrap" />
 
-                <StackPanel Margin="5,0,0,0" Orientation="Vertical">
+                <StackPanel Margin="2,0,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Vertical">
                     <Image Name="maxUp"
                            Width="20"
                            Height="17"
@@ -102,7 +116,7 @@
                 </StackPanel>
             </StackPanel>
             <ComboBox x:Name="cbHomeMode"
-                      Width="120"
+                      Width="80"
                       Margin="5,0,0,0"
                       HorizontalAlignment="Stretch"
                       VerticalAlignment="Stretch"
@@ -112,14 +126,18 @@
                 <ComboBoxItem Content="Ignore" />
                 <ComboBoxItem Content="Goto" />
             </ComboBox>
-            <StackPanel Height="35"
+            <StackPanel Height="40"
                         Margin="5,0,0,0"
+                        BorderBrush="Black"
+                        BorderThickness="1"
                         Orientation="Horizontal">
                 <TextBox x:Name="spTarget"
                          Width="50"
                          Margin="0"
-                         HorizontalAlignment="Left"
+                         HorizontalAlignment="Center"
                          VerticalAlignment="Center"
+                         Background="{x:Null}"
+                         BorderBrush="{x:Null}"
                          BorderThickness="1"
                          InputScope="Number"
                          IsSpellCheckEnabled="False"
@@ -128,7 +146,10 @@
                          TextChanged="spTarget_TextChanged"
                          TextWrapping="Wrap" />
 
-                <StackPanel Margin="0,0,0,0" Orientation="Vertical">
+                <StackPanel Margin="2,0,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Vertical">
                     <Image Name="targetUp"
                            Width="20"
                            Height="17"
@@ -141,14 +162,17 @@
                            Source="btndown.png" />
                 </StackPanel>
             </StackPanel>
-            <StackPanel Height="35"
+            <StackPanel Height="40"
                         Margin="5,0,0,0"
+                        BorderBrush="Black"
+                        BorderThickness="1"
                         Orientation="Horizontal"
                         Padding="0,0,0,0">
                 <TextBox x:Name="speedValue"
                          Width="50"
-                         HorizontalAlignment="Left"
+                         HorizontalAlignment="Center"
                          VerticalAlignment="Center"
+                         BorderBrush="{x:Null}"
                          BorderThickness="1"
                          InputScope="Number"
                          IsSpellCheckEnabled="False"
@@ -157,7 +181,10 @@
                          TextChanged="speedValue_TextChanged"
                          TextWrapping="Wrap" />
 
-                <StackPanel Orientation="Vertical">
+                <StackPanel Margin="2,0,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Vertical">
                     <Image Name="speedUp"
                            Width="20"
                            Height="17"
@@ -170,15 +197,18 @@
                            Source="btndown.png" />
                 </StackPanel>
             </StackPanel>
-            <StackPanel Height="35"
+            <StackPanel Height="40"
                         Margin="5,0,0,0"
+                        BorderBrush="Black"
+                        BorderThickness="1"
                         Orientation="Horizontal"
                         Padding="0,0,0,0">
                 <TextBox x:Name="accelerationValue"
                          Width="50"
                          Margin="0,2,0,0"
-                         HorizontalAlignment="Left"
-                         VerticalAlignment="Top"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         BorderBrush="{x:Null}"
                          BorderThickness="1"
                          InputScope="Number"
                          IsSpellCheckEnabled="False"
@@ -188,7 +218,10 @@
                          TextChanged="accelerationValue_TextChanged"
                          TextWrapping="Wrap" />
 
-                <StackPanel Orientation="Vertical">
+                <StackPanel Margin="2,0,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Vertical">
                     <Image Name="accelerationUp"
                            Width="20"
                            Height="17"
@@ -201,24 +234,31 @@
                            Source="btndown.png" />
                 </StackPanel>
             </StackPanel>
-            <StackPanel Height="35"
+            <StackPanel Height="40"
                         Margin="5,0,0,0"
+                        BorderBrush="Black"
+                        BorderThickness="1"
                         Orientation="Horizontal"
                         Padding="0,0,0,0">
                 <TextBox x:Name="spNueatral8b"
                          Width="50"
-                         HorizontalAlignment="Left"
+                         HorizontalAlignment="Center"
                          VerticalAlignment="Center"
+                         BorderBrush="{x:Null}"
                          BorderThickness="1"
                          InputScope="Number"
                          IsSpellCheckEnabled="False"
                          Padding="10,3,6,5"
                          PlaceholderText="0"
+                         RenderTransformOrigin="0.5,0.5"
                          Text="1500"
                          TextChanged="spNueatral8b_TextChanged"
                          TextWrapping="Wrap" />
 
-                <StackPanel Orientation="Vertical">
+                <StackPanel Margin="2,0,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Vertical">
                     <Image Name="nuetral8bUp"
                            Width="20"
                            Height="17"
@@ -231,14 +271,17 @@
                            Source="btndown.png" />
                 </StackPanel>
             </StackPanel>
-            <StackPanel Height="35"
+            <StackPanel Height="40"
                         Margin="5,0,0,0"
+                        BorderBrush="Black"
+                        BorderThickness="1"
                         Orientation="Horizontal"
                         Padding="0">
                 <TextBox x:Name="spRange8b"
                          Width="50"
-                         HorizontalAlignment="Left"
+                         HorizontalAlignment="Center"
                          VerticalAlignment="Center"
+                         BorderBrush="{x:Null}"
                          BorderThickness="1"
                          InputScope="Number"
                          IsSpellCheckEnabled="False"
@@ -248,7 +291,10 @@
                          TextChanged="spRange8b_TextChanged"
                          TextWrapping="Wrap" />
 
-                <StackPanel Orientation="Vertical">
+                <StackPanel Margin="2,0,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Vertical">
                     <Image Name="range8bUp"
                            Width="20"
                            Height="17"

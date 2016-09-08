@@ -1,18 +1,8 @@
 ﻿using Pololu.Usc;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
+
 
 // The User Control item template is documented at http://go.microsoft.com/fwlink/?LinkId=234236
 
@@ -22,7 +12,6 @@ namespace MaestroUsbUI.Control
     {
         private Int16 speed = 0;
         private UInt16 acceleration = 0;
-        private String name = "";
         private byte channel = 0;
         private UInt16 target = 1500;
         private UInt16 min = 1000;
@@ -73,7 +62,7 @@ namespace MaestroUsbUI.Control
             }
             set
             {
-                target = value;
+                target = (UInt16)(value / 4);
                 spTarget.Text = target.ToString();
 
             }
@@ -114,7 +103,7 @@ namespace MaestroUsbUI.Control
             }
             set
             {
-                min = value;
+                min = (UInt16)(value /4);
                 spMin.Text = min.ToString();
             }
         }
@@ -127,7 +116,7 @@ namespace MaestroUsbUI.Control
             }
             set
             {
-                max = value;
+                max =(UInt16)(value / 4);
                 spMax.Text = max.ToString();
             }
         }
@@ -141,7 +130,58 @@ namespace MaestroUsbUI.Control
             set
             {
                 channel = value;
-                tbChannel.Text = channel.ToString();
+                tbChannel.Text = channel.ToString("D2");
+            }
+        }
+
+        public ChannelMode Mode
+        {
+            get
+            {
+                return mode;
+            }
+            set
+            {
+                mode = value;
+                cbMode.SelectedIndex = (byte)mode;
+            }
+        }
+
+
+        public HomeMode homeMode
+        {
+            get
+            {
+                return homemode;
+            }
+            set
+            {
+                homemode = value;
+                cbHomeMode.SelectedIndex = (byte)homemode;
+            }
+        }
+
+        public Int16 Range
+        {
+            get
+            {
+                return range;
+            }
+            set
+            {
+                range = value;
+            }
+        }
+
+        public UInt16 Nuetral8Bit
+        {
+            get
+            {
+                return nuetral8b;
+            }
+            set
+            {
+                nuetral8b = value;
             }
         }
 
@@ -389,7 +429,7 @@ namespace MaestroUsbUI.Control
         {
             if (cbMode.SelectedIndex > -1)
             {
-                mode = (ChannelMode)(cbHomeMode.SelectedIndex);
+                mode = (ChannelMode)(cbMode.SelectedIndex);
                 
                 if (modeChanged != null)
                 {

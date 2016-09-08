@@ -206,7 +206,8 @@ namespace MaestroUsb
         /// </summary>
         public MaestroDeviceManager()
         {
-            // create new device list
+            // create new device list 
+            
             maestroDeviceList = new Collection<MaestroDeviceListItem>(); 
           //  OpenDeviceWatcher();
         }
@@ -228,43 +229,53 @@ namespace MaestroUsb
         /// </summary>
         public async void BuildDeviceList()
         {
-              string deviceSelector = UsbDevice.GetDeviceSelector(DeviceInterfaceClass);
+            // if we already have a list then just call the list ready call back as the handlers will take care of the rest
+            if (maestroDeviceList == null)
+            {
+                string deviceSelector = UsbDevice.GetDeviceSelector(DeviceInterfaceClass);
 
-              var maestroDevices = await DeviceInformation.FindAllAsync(deviceSelector);
-              try
-              {
-
-                for (int i = 0; i < maestroDevices.Count; i++)
+                var maestroDevices = await DeviceInformation.FindAllAsync(deviceSelector);
+                try
                 {
-                    // construct out list item
-                    // check we dont alraedy have this device in the list
-                    // MaestroDeviceListItem maestroListItem = maestroDeviceList.Contains(item => item.deviceInformation.Id == maestroDevices[i].Id);
-                    UsbDevice usbDevice = await UsbDevice.FromIdAsync(maestroDevices[i].Id);
 
-
-                    MaestroDeviceListItem maestroListItem = new MaestroDeviceListItem(usbDevice, maestroDevices[i], maestroDevices[i].Name, maestroDevices[i].Id, Convert.ToUInt16(usbDevice.DeviceDescriptor.ProductId));
-                    maestroListItem.Connected = true;
-                    if (maestroDeviceList.Contains(maestroListItem) == false)
+                    for (int i = 0; i < maestroDevices.Count; i++)
                     {
-                        maestroDeviceList.Add(maestroListItem);
+                        // construct out list item
+                        // check we dont alraedy have this device in the list
+                        // MaestroDeviceListItem maestroListItem = maestroDeviceList.Contains(item => item.deviceInformation.Id == maestroDevices[i].Id);
+                        UsbDevice usbDevice = await UsbDevice.FromIdAsync(maestroDevices[i].Id);
+
+
+                        MaestroDeviceListItem maestroListItem = new MaestroDeviceListItem(usbDevice, maestroDevices[i], maestroDevices[i].Name, maestroDevices[i].Id, Convert.ToUInt16(usbDevice.DeviceDescriptor.ProductId));
+                        maestroListItem.Connected = true;
+                        if (maestroDeviceList.Contains(maestroListItem) == false)
+                        {
+                            maestroDeviceList.Add(maestroListItem);
+                        }
+
+
                     }
-                    
+                    deviceListReady = true;
+                    // everything ok we now have list so add the watchers
+                    OpenDeviceWatchers();
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e);
+                    deviceListReady = false;
 
                 }
+            }
+            else
+            {
                 deviceListReady = true;
                 // everything ok we now have list so add the watchers
                 OpenDeviceWatchers();
-              }
-              catch (Exception e)
-              {
-                Debug.WriteLine(e);
-                deviceListReady = false;
-
-              }
-              if (deviceListReadyCallback != null)
-              {
+            }
+            if (deviceListReadyCallback != null)
+            {
                 deviceListReadyCallback(maestroDeviceList);
-              }
+            }
 
         }
 
@@ -735,7 +746,7 @@ namespace MaestroUsb
         /// <returns></returns>
         public static decimal positionToMicroseconds(ushort position)
         {
-            return (decimal)position / 4M;
+            return position / 4M;
         }
 
         /// <summary>
@@ -820,7 +831,8 @@ namespace MaestroUsb
         /// <param name="servo">Channel number.</param>
         uscParameter specifyServo(uscParameter p, byte servo)
         {
-            return (uscParameter)((byte)(p) + servo * servoParameterBytes);
+            byte param = (byte)((byte)(p) + servo * servoParameterBytes);
+            return (uscParameter)(param);
         }
 
 
@@ -1363,7 +1375,7 @@ namespace MaestroUsb
        /// reads the servo variables from maestro
        /// </summary>
        /// <returns></returns>
-        private async Task<ServoStatus[]> getServosMiniMaestro()
+        public async Task<ServoStatus[]> getServosMiniMaestro()
         {
             try
             {
@@ -1371,6 +1383,7 @@ namespace MaestroUsb
                 ServoStatus[] servos = new ServoStatus[servoCount];
                 IBuffer buffer = await miniMaestroControlTransfer((byte)uscRequest.REQUEST_GET_SERVO_SETTINGS,packetSize);
                 DataReader reader = DataReader.FromBuffer(buffer);
+                reader.ByteOrder = ByteOrder.LittleEndian;
                 servos = new ServoStatus[servoCount];
                 for (byte i = 0; i < servoCount; i++)
                 {
@@ -1390,7 +1403,7 @@ namespace MaestroUsb
 
         private unsafe uint getMicroVariablesPacketSize()
         {
-            return (uint)(sizeof(MicroMaestroVariables) + servoCount * sizeof(ServoStatus));
+            return (uint)(sizeof(MicroMaestroVariables) + (servoCount * 7));
         }
 
         /// <summary>
@@ -1409,30 +1422,37 @@ namespace MaestroUsb
                 }
                 // copy the variable data
                 DataReader reader = DataReader.FromBuffer(buffer);
+                reader.ByteOrder = ByteOrder.LittleEndian;
 
                 // Copy the variable data
                 mVariables.stackPointer = reader.ReadByte();
                 mVariables.callStackPointer = reader.ReadByte();
                 mVariables.errors = reader.ReadUInt16();
                 mVariables.programCounter = reader.ReadUInt16();
+                for (byte i = 0; i < 3; i++)
+                {
+                    reader.ReadInt16();  // 3 int s that do nothing
+                }
+                stack = new short[32];
+                for (byte i = 0; i < 32; i++)
+                {
+                    stack[i] = reader.ReadInt16();
+                }
+                callstack = new ushort[10];
+                for (byte i = 0; i < 10; i++)
+                {
+                    callstack[i] = reader.ReadUInt16();
+                }
                 mVariables.scriptDone = reader.ReadByte();
                 mVariables.performanceFlags = reader.ReadByte();
+               
+                
                 for (byte i = 0; i < servoCount; i++)
                 {
                     mServoStatus[i].position = reader.ReadUInt16();
                     mServoStatus[i].target = reader.ReadUInt16();
                     mServoStatus[i].speed = reader.ReadUInt16();
                     mServoStatus[i].acceleration = reader.ReadByte();
-                }
-                stack = new short[mVariables.stackPointer];
-                for (byte i = 0; i < stack.Length; i++)
-                {
-                    stack[i] = reader.ReadInt16();
-                }
-                callstack = new ushort[mVariables.callStackPointer];
-                for (byte i = 0; i < callstack.Length; i++)
-                {
-                    callstack[i] = reader.ReadUInt16();
                 }
                 return true;
             }
@@ -1558,7 +1578,7 @@ namespace MaestroUsb
                         Recipient = UsbControlRecipient.Device,
                         ControlTransferType = UsbControlTransferType.Vendor,
                     },
-                    Request = (byte)uscRequest.REQUEST_GET_SERVO_SETTINGS,
+                    Request = (byte)uscrequest,
                     Length = packetSize
                 };
 
@@ -1576,7 +1596,7 @@ namespace MaestroUsb
         /// <summary>
         /// read maestro variables 
         /// </summary>
-        public async void getMaestroVariables()
+        public async Task<bool> getMaestroVariables()
         {
             try
             {
@@ -1588,6 +1608,7 @@ namespace MaestroUsb
                     stack = new short[MicroMaestroStackSize];
                     callstack = new ushort[MicroMaestroCallStackSize];
                     await getVariablesMicroMaestro();
+                    return true;
                 }
                 else
                 {
@@ -1597,12 +1618,14 @@ namespace MaestroUsb
                     stack = await getStackMiniMaestro();
                     callstack = new ushort[MiniMaestroCallStackSize];       
                     callstack = await getCallStackMiniMaestro();
+                    return true;
                 }
               
             }
             catch (Exception e)
             {
                 Debug.WriteLine(e);
+                return true;
                 
             }
         }
@@ -1706,6 +1729,7 @@ namespace MaestroUsb
         /// <param name="value">new position in us</param>
         public void setTarget(byte servo, ushort value)
         {
+            
             try
             {
                 controlTransfer(0x40, (byte)uscRequest.REQUEST_SET_TARGET, value, servo);
@@ -1955,12 +1979,13 @@ namespace MaestroUsb
                 throw new Exception("There was an error re-initializing the device.", e);
             }
 
-            Task.Delay(waitTime);
+            
             if (!microMaestro)
             {
                 // Flush out any spurious performance flags that might have occurred.
                 getMaestroVariables();
             }
+            Task.Delay(waitTime);
         }
 
         public void clearErrors()
@@ -2014,7 +2039,7 @@ namespace MaestroUsb
                     Length = 0
                 };
 
-
+      
                 return await maestroDevice.device.SendControlOutTransferAsync(setupPacket);
             }
             catch (Exception e)
@@ -2032,6 +2057,7 @@ namespace MaestroUsb
             {
                 IBuffer retbuffer = await SendVendorControlTransferParameterInAsync(parameter);
                 DataReader reader = DataReader.FromBuffer(retbuffer);
+                reader.ByteOrder = ByteOrder.LittleEndian;
                 if (retbuffer.Length == 1)
                 {
                     value = Convert.ToUInt16(reader.ReadByte());

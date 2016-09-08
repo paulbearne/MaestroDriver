@@ -5,13 +5,15 @@
              xmlns:local="using:MaestroUsbUI"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              d:DesignHeight="40"
-             d:DesignWidth="400"
+             d:DesignWidth="500"
              mc:Ignorable="d">
 
     <Grid Margin="0,0,0,0">
         <StackPanel Orientation="Vertical">
 
-            <StackPanel Orientation="Horizontal">
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
                 <TextBlock Margin="5,0,0,0"
                            VerticalAlignment="Center"
                            Text="#" />
@@ -20,7 +22,7 @@
                            Padding="0,0,5,0"
                            Text="0" />
                 <Slider x:Name="slPosition"
-                        Width="150"
+                        Width="250"
                         Height="40"
                         Maximum="2500"
                         Minimum="500"
@@ -28,14 +30,17 @@
                         TickPlacement="Outside"
                         ValueChanged="slPosition_ValueChanged"
                         Value="1500" />
-                <StackPanel Height="35"
-                            Margin="0,0,0,0"
+                <StackPanel Height="40"
+                            Margin="10,0,0,0"
+                            BorderBrush="Black"
+                            BorderThickness="1"
                             Orientation="Horizontal"
                             Padding="2,0,0,0">
                     <TextBox x:Name="speedValue"
                              Width="50"
                              HorizontalAlignment="Left"
                              VerticalAlignment="Center"
+                             BorderBrush="{x:Null}"
                              BorderThickness="1"
                              InputScope="Number"
                              IsSpellCheckEnabled="False"
@@ -44,7 +49,9 @@
                              TextChanged="speedValue_TextChanged"
                              TextWrapping="Wrap" />
 
-                    <StackPanel Orientation="Vertical">
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Orientation="Vertical">
                         <Image Name="speedUp"
                                Width="20"
                                Height="17"
@@ -57,14 +64,17 @@
                                Source="btndown.png" />
                     </StackPanel>
                 </StackPanel>
-                <StackPanel Height="35"
-                            Margin="0,0,0,0"
+                <StackPanel Height="40"
+                            Margin="10,0,0,0"
+                            BorderBrush="Black"
+                            BorderThickness="1"
                             Orientation="Horizontal"
                             Padding="2,0,0,0">
                     <TextBox x:Name="accelerationValue"
                              Width="50"
                              HorizontalAlignment="Left"
                              VerticalAlignment="Center"
+                             BorderBrush="{x:Null}"
                              BorderThickness="1"
                              InputScope="Number"
                              IsSpellCheckEnabled="False"
@@ -74,7 +84,9 @@
                              TextChanged="accelerationValue_TextChanged"
                              TextWrapping="Wrap" />
 
-                    <StackPanel Orientation="Vertical">
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Orientation="Vertical">
                         <Image Name="accelerationUp"
                                Width="20"
                                Height="17"

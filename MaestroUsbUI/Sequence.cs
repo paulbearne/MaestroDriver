@@ -83,10 +83,10 @@ namespace Pololu.Usc.Sequencer
             {
                 File.Delete(fname);
             }
-            XmlWriter writer = XmlWriter.Create(File.Create(fname));
-            writer.Settings.Indent = true;
-            doc.WriteContentTo(writer);
-            writer.Flush();
+       //     XmlWriter writer = XmlWriter.Create(File.Create(fname));
+        //    writer.Settings.Indent = true;
+        //    doc.WriteContentTo(writer);
+        //    writer.Flush();
             
         }
 

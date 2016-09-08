@@ -6,10 +6,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
-using Windows.ApplicationModel;
 using Windows.Devices.Enumeration;
-using Windows.Devices.Usb;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Core;
@@ -21,52 +18,142 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
+// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
+
 namespace MaestroUsbUI
 {
-    public enum NotifyType
+
+   
+
+    public class MaestroBoard
     {
-        StatusMessage,
-        ErrorMessage
-    };
+        public bool BoardConnected = false;
+        public MaestroDeviceListItem maestro;
+    }
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
+    /// 
     public sealed partial class MainPage : Page
     {
-        // add observable collection to show list of maestro devices in combobox
+        
         private ObservableCollection<MaestroDeviceListItem> listOfDevices;
-        private bool Connected = false;
         //  single maestro board
-        private MaestroDeviceListItem maestroDevice;
-        // all maestro boards
-        private MaestroDeviceManager maestrodevices;
-        // maestro settings
-        private UscSettings settings;
         public static Guid DeviceInterfaceClass = new Guid("{e0fbe39f-7670-4db6-9b1a-1dfb141014a7}");
+        public event EventHandler<NotifyType> maestroConnectionEvent;
+
         public MainPage()
         {
-            // init the comboboc collection
-            listOfDevices = new ObservableCollection<MaestroDeviceListItem>();
             this.InitializeComponent();
+            
+
 
 
         }
 
+        protected override void OnNavigatedTo(NavigationEventArgs eventArgs)
+        {
+            // retrieve a list of boards
+            listOfDevices = new ObservableCollection<MaestroDeviceListItem>();
+           
+            getDeviceList();
+            // bind the combobox to the collection
+            DeviceListSource.Source = listOfDevices;
+            // add callback for a device being selected
+            lbDevices.SelectionChanged += LbDevices_SelectionChanged;
+
+        }
+
+
+        private async void LbDevices_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (lbDevices.SelectedIndex > -1)
+            {
+                // get the board
+                if (Globals.maestroBoard == null)
+                    Globals.maestroBoard = new MaestroUsbUI.MaestroBoard();
+                Globals.maestroBoard.maestro = listOfDevices[lbDevices.SelectedIndex];
+                // check if we are connected
+                if (Globals.maestroBoard.maestro.device == null)
+                {
+                    Globals.maestroManager.deviceConnectedCallback += Maestrodevices_deviceConnectedCallback;
+                    // not connected so connect
+                    await Globals.maestroManager.OpenDeviceAsync(Globals.maestroBoard.maestro);
+                    
+
+                }
+                else
+                {
+                    // already connected so draw the controls
+                    // drawMaestroControls(maestroDevice);
+                    status.Text = Globals.maestroBoard.maestro.Name + " Connected";
+                     if (maestroConnectionEvent != null)
+                        maestroConnectionEvent(this, NotifyType.Connected);
+                }
+            }
+        }
+
         // gets a list of connected boards
-        private void getDeviceList()
+        private async void getDeviceList()
         {
             // create devicemanager
-            maestrodevices = new MaestroDeviceManager();
-            // callback so that we are notified that the list of devices is ready
-            maestrodevices.deviceListReadyCallback += Maestrodevices_deviceListReadyCallback;
-            // buid the list of currently plugged in boards
-            maestrodevices.BuildDeviceList();
+            if (Globals.maestroManager == null)
+            {
+                Globals.maestroManager = new MaestroDeviceManager();
+                // callback so that we are notified that the list of devices is ready
+                Globals.maestroManager.deviceListReadyCallback += Maestrodevices_deviceListReadyCallback;
+                // buid the list of currently plugged in boards
+                Globals.maestroManager.BuildDeviceList();
+            }
+            else
+            {
+                if (listOfDevices != null)
+                {
+                    // run on ui thread
+                    await Dispatcher.RunAsync(
+                        CoreDispatcherPriority.Normal,
+                        new DispatchedHandler(() =>
+                        {
+                            foreach (MaestroDeviceListItem item in Globals.maestroManager.DeviceList)
+                            {
+                                // make the combobox list match our device list
+                                listOfDevices.Add(item);
+                            }
+                            if (listOfDevices.Count > 0)
+                            {
+                                
+                                // see if we already have a selected board
+                                if (Globals.maestroBoard != null)
+                                {
+                                    if (listOfDevices.Contains(Globals.maestroBoard.maestro)){
+                                        lbDevices.SelectedIndex = listOfDevices.IndexOf(Globals.maestroBoard.maestro);
+                                    }
+                                    else
+                                    {
+                                        lbDevices.SelectedIndex = 0; // select first item by default
+                                    }
+                                } else
+                                {
+                                    lbDevices.SelectedIndex = 0; // select first item by default
+                                }
+                               
+                            }
+                        }));
+                }
+            }
 
+        }
+
+
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            // empty everything to force the board scan again
+            
         }
 
         private async void Maestrodevices_deviceListReadyCallback(Collection<MaestroDeviceListItem> devices)
         {
-            //We now have completed built list
+            //We now have completed new built list
             if (listOfDevices != null)
             {
                 // run on ui thread
@@ -87,9 +174,9 @@ namespace MaestroUsbUI
             }
             //add device callbacks 
             // notify us when a board is plugged in
-            maestrodevices.deviceAddedCallback += Maestrodevices_deviceAddedCallback;
+            Globals.maestroManager.deviceAddedCallback += Maestrodevices_deviceAddedCallback;
             // notify us when a board is removed
-            maestrodevices.deviceRemovedCallback += Maestrodevices_deviceRemovedCallback;
+            Globals.maestroManager.deviceRemovedCallback += Maestrodevices_deviceRemovedCallback;
         }
 
         private async void Maestrodevices_deviceRemovedCallback(DeviceInformationUpdate deviceInfo)
@@ -100,7 +187,7 @@ namespace MaestroUsbUI
                 await Dispatcher.RunAsync(
                       CoreDispatcherPriority.Normal,
                       new DispatchedHandler(() =>
-                      { 
+                      {
                           // find the board thats been removed in the combobox list
                           var firstitem = listOfDevices.First(e => e.Id == deviceInfo.Id);
                           // get its item index
@@ -110,12 +197,16 @@ namespace MaestroUsbUI
                           {
                               // remove the board from the list
                               listOfDevices.RemoveAt(index);
+
+                              status.Text = "Not Connected";
                               if (listOfDevices.Count > 0)
                               {
-                                 // if we have more than one device select the first item
-                                 lbDevices.SelectedIndex = 0;
+                                  // if we have more than one device select the first item
+                                  lbDevices.SelectedIndex = 0;
                               }
                           }
+                          if (maestroConnectionEvent != null)
+                              maestroConnectionEvent(this, NotifyType.Removed);
                       }));
 
             }
@@ -158,39 +249,6 @@ namespace MaestroUsbUI
             }
         }
 
-
-        protected override void OnNavigatedTo(NavigationEventArgs eventArgs)
-        {
-            // retrieve a list of boards
-            getDeviceList();
-            // bind the combobox to the collection
-            DeviceListSource.Source = listOfDevices;
-            // add callback for a device being selected
-            lbDevices.SelectionChanged += LbDevices_SelectionChanged;
-
-        }
-
-        private async void LbDevices_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (lbDevices.SelectedIndex > -1)
-            {
-                // get the board
-                maestroDevice = listOfDevices[lbDevices.SelectedIndex];
-                // check if we are connected
-                if (maestroDevice.device == null)
-                {
-                    maestrodevices.deviceConnectedCallback += Maestrodevices_deviceConnectedCallback;
-                    // not connected so connect
-                    await maestrodevices.OpenDeviceAsync(maestroDevice);
-                }
-                else
-                {
-                    // already connected so draw the controls
-                    drawMaestroControls(maestroDevice);
-                }
-            }
-        }
-
         private async void Maestrodevices_deviceConnectedCallback(MaestroDeviceListItem device)
         {
             await Dispatcher.RunAsync(
@@ -198,71 +256,67 @@ namespace MaestroUsbUI
                      new DispatchedHandler(() =>
                      {
                          // now connected so draw our sliders
-                         drawMaestroControls(device);
+                         status.Text = device.Name + " Connected";
+
+                         if (maestroConnectionEvent != null)
+                             maestroConnectionEvent(this, NotifyType.Connected);
                      }));
+            Globals.maestroBoard.maestro = device;
+            Globals.maestroBoard.BoardConnected = true;
         }
 
-
-      //  private unsafe int getservostructsize()
-        //{
-          //  return sizeof(ServoStatus);
-        //}
-
-        private async void drawMaestroControls(MaestroDeviceListItem maestroItem)
+        
+        private void btnSettings_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            // get the number of servos on the board
-            UInt16 count = maestroItem.Maestro.ServoCount;
-            // get all the settings stored on the board
-            settings = await maestroItem.Maestro.getUscSettings();
-            maestroItem.Maestro.getMaestroVariables();
-            Connected = true;
-            tbDeviceName.Text = maestroItem.Name + " Connected";
-            // Create an array of  controls
-            MaestroControl[] maestroChannels = new MaestroControl[count];
-            for (UInt16 i = 0; i < count; i++)
-            {
-                // add a speed , acceleration and target controls to the app
-                maestroChannels[i] = new MaestroControl();
-                maestroChannels[i].ChannelNumber = i;
-                // update the controls to show current values from the board
-                maestroChannels[i].Acceleration = Convert.ToUInt16(settings.channelSettings[i].acceleration);
-                maestroChannels[i].Speed = Convert.ToUInt16(settings.channelSettings[i].speed);
-                maestroPanel.Children.Add(maestroChannels[i]);
-                // add the callbacks for changes
-                maestroChannels[i].positionChanged += MainPage_positionChanged;
-                maestroChannels[i].speedChanged += MainPage_speedChanged;
-                maestroChannels[i].accelerationChanged += MainPage_accelerationChanged;
-            }
-            
-
+           this.Frame.Navigate(typeof(SettingsPage), Globals.maestroBoard);
+           
         }
 
-
-        private  void MainPage_accelerationChanged(byte Channel, byte newAcceleration)
+        private void btnComms_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            //  add new value to
-           // settings.channelSettings[Channel].acceleration = newAcceleration;
-            maestroDevice.Maestro.setAcceleration(Channel,newAcceleration);
+            this.Frame.Navigate(typeof(CommsPage), Globals.maestroBoard);
         }
 
-        private  void MainPage_speedChanged(byte Channel, UInt16 newSpeed)
+        private void btnControl_Tapped(object sender, TappedRoutedEventArgs e)
         {
-           // settings.channelSettings[Channel].speed = newSpeed;
-            maestroDevice.Maestro.setSpeed(Channel,newSpeed);
-
-
+           this.Frame.Navigate(typeof(ManualControl), Globals.maestroBoard);
+           
         }
 
-        private  void MainPage_positionChanged(byte Channel, UInt16 newPosition)
+        private void btnSettings_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            if (Connected)
-            {
-                // set target position in us
-                maestroDevice.Maestro.setTarget(Channel, (UInt16)(newPosition * 4));
-                
-            }
+            Brush blueBrush = new SolidColorBrush(Windows.UI.Colors.SlateBlue);
+            brSettings.BorderBrush = blueBrush;
+        }
+
+        private void btnSettings_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            Brush whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
+            brSettings.BorderBrush = whiteBrush;
+        }
+
+        private void btnControl_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            Brush blueBrush = new SolidColorBrush(Windows.UI.Colors.SlateBlue);
+            brControl.BorderBrush = blueBrush;
+        }
+
+        private void btnControl_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            Brush whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
+            brControl.BorderBrush = whiteBrush;
+        }
+
+        private void btnComms_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            Brush blueBrush = new SolidColorBrush(Windows.UI.Colors.SlateBlue);
+            brComms.BorderBrush = blueBrush;
+        }
+
+        private void btnComms_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            Brush whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
+            brComms.BorderBrush = whiteBrush;
         }
     }
-
 }
-

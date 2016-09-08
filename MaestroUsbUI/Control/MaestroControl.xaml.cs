@@ -119,7 +119,7 @@ namespace MaestroUsbUI
             set
             {
                 channel = value;
-                Channel.Text = channel.ToString();
+                Channel.Text = channel.ToString("D2");
             }
         }
 
