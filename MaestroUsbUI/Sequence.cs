@@ -12,12 +12,27 @@ using Windows.Storage;
 using System.Collections.ObjectModel;
 using System.Xml;
 using Pololu.Usc.Sequencer;
+using Windows.Data.Xml.Dom;
+using System.Xml.Linq;
 
 // TODO: stop suppressing error 1591 (in the project properties) and add XML comments for everything in this assembly
 
 namespace Pololu.Usc.Sequencer
 {
-    
+    class sequenceFrame
+    {
+        string name;
+        UInt16 duration;
+        string targets;
+    }
+
+    class sequenceItem
+    {
+        string name;
+        uint framecount;
+        sequenceFrame[] frames;
+    }
+
     public class Sequence
     {
         private ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
@@ -36,53 +51,40 @@ namespace Pololu.Usc.Sequencer
         /// </summary>
         /// <param name="list">A list of sequences to save in key/sequences in the registry.</param>
         /// <param name="parentKey">A key that has been opened so as to allow editing.</param>
-        public static void saveSequencesInRegistry(IList<Sequence> list, XmlDocument doc,string fname)
+        public static void saveSequencesInRegistry(IList<Sequence> list, BinaryWriter writer)
         {
-            XmlElement sequences = doc.CreateElement("sequences");
+            // start sequences element
 
-           // parentKey.CreateSubKey("sequences");
-           // RegistryKey sequencesKey = parentKey.OpenSubKey("sequences", true);
+            //  writer.WriteStartElement("sequences");
+            writer.Write((Int32)list.Count);
 
+
+           
             for (int sequenceIndex = 0; sequenceIndex < list.Count; sequenceIndex++)
             {
+               
                 Sequence sequence = list[sequenceIndex];
-                string sequenceKeyName = sequenceIndex.ToString("d2"); // e.g. 01
-                XmlElement sequenceKey = doc.CreateElement(sequenceKeyName);
-                sequences.AppendChild(sequenceKey);
-                //RegistryKey sequenceKey = sequencesKey.CreateSubKey(sequenceKeyName);
-                XmlAttribute nameattr = doc.CreateAttribute("name");
-                nameattr.Value = sequence.name;
-                sequenceKey.Attributes.Append(nameattr);
-               // sequenceKey.SetValue("name", sequence.name, RegistryValueKind.String);
+                writer.Write(sequenceIndex.ToString("d2"));
+                writer.Write((Int32)sequence.frames.Count);
 
                 for (int frameIndex = 0; frameIndex < sequence.frames.Count; frameIndex++)
                 {
                     Frame frame = sequence.frames[frameIndex];
                     string frameKeyName = frameIndex.ToString("d4"); // e.g. 0001
                     //RegistryKey frameKey = sequenceKey.CreateSubKey(frameKeyName);
-                    XmlElement framekey = doc.CreateElement(frameIndex.ToString("d4"));
-                    sequenceKey.AppendChild(framekey);
-
-                    // Convert the duration to an Int32 because the current implementation of
-                    // SetValue in Mono only accepts Int32 and Long types.
-                    XmlAttribute durationattr = doc.CreateAttribute("duration");
-                    durationattr.Value = frame.length_ms.ToString();
-                    framekey.Attributes.Append(durationattr);
-                    // frameKey.SetValue("duration", (Int32)frame.length_ms, RegistryValueKind.DWord);
-                    XmlAttribute targetattr = doc.CreateAttribute("targets");
-                    targetattr.Value = frame.getTargetsString();
-                    framekey.Attributes.Append(targetattr);
-                   // frameKey.SetValue("targets", frame.getTargetsString(), RegistryValueKind.String);
-
-                    //frameKey.Close();
+                    writer.Write(frameKeyName);
+                    writer.Write((UInt16)frame.length_ms);
+                    writer.Write((Int32)frame.targets.Length);
+                    for (uint targetindex = 0; targetindex < frame.targets.Length; targetindex++)
+                    {
+                        writer.Write((UInt16)frame.targets[targetindex]);
+                    }
                 }
-                //sequenceKey.Close();
+                
             }
+           
             // sequencesKey.Close();
-            if (File.Exists(fname))
-            {
-                File.Delete(fname);
-            }
+           
        //     XmlWriter writer = XmlWriter.Create(File.Create(fname));
         //    writer.Settings.Indent = true;
         //    doc.WriteContentTo(writer);
@@ -90,81 +92,36 @@ namespace Pololu.Usc.Sequencer
             
         }
 
-    
-
-        /// <summary>
-        /// Reads sequences from the registry in the "sequences" subkey of the given key.
-        /// </summary>
-        public static List<Sequence> readSequencesFromRegistry(XmlDocument doc, string fname, byte servoCount)
+        public static List<Sequence> readSequencesFromRegistry(BinaryReader reader,  byte servoCount)
         {
             List<Sequence> sequences = new List<Sequence>();
-
-            
-            XmlNodeList nodes = doc.GetElementsByTagName("sequences");
-
-            if (nodes == null)
-                return sequences;
-
-            XmlNode sequencesKey = nodes[0];
-           // RegistryKey sequencesKey = parentKey.OpenSubKey("sequences");
-
-            //if (sequencesKey == null)
-              //  return sequences;
-
-            FrameKeyNameComparer fknc = new FrameKeyNameComparer();
-
-            if (sequencesKey == null)
-                return sequences;
-
-            for(int i = 0; i < sequencesKey.ChildNodes.Count; i++)
+            int sequencecount = reader.ReadInt32();
+            for (int sequenceIndex = 0; sequenceIndex < sequencecount; sequenceIndex++)
             {
-                //RegistryKey sequenceKey = sequencesKey.OpenSubKey(sequenceKeyName);
-                XmlNode sequenceNode = sequencesKey.ChildNodes[i];
-                string sequenceName = sequenceNode.Name;
-                if (sequenceName == null)
+
+                Sequence sequence = new Sequence();
+                sequence.name = reader.ReadString();
+                int framecount = reader.ReadInt32();
+
+                for (int frameIndex = 0; frameIndex < framecount; frameIndex++)
                 {
-                    sequenceName = "Sequence " + i.ToString();
-                }
-
-                Sequence sequence = new Sequence(sequenceName);
-
-                // List<string> frameKeyNames = new List<String>(sequenceKey.GetSubKeyNames());
-
-                // Make sure the frames are in the right order.
-                //frameKeyNames.Sort(fknc);
-                
-                List<Frame> frames = new List<Frame>(sequenceNode.ChildNodes.Count);
-                for (int j = 0;j < sequenceNode.ChildNodes.Count;j++)
-                {
-                    XmlNode frameKey = sequenceNode.ChildNodes[j];
-                    if (frameKey == null)
-                        continue;
-
                     Frame frame = new Frame();
-
-                    frame.name = frameKey.Name;
-                    if (frame.name == null) {
-                        frame.name = "Frame " + j.ToString();
-                    }
-
-                    XmlAttribute durationattr = frameKey.Attributes[0];
-                    Nullable<int> length_ms = int.Parse(durationattr.Value);
-                    if (length_ms != null)
+                    frame.name = reader.ReadString();
+                    frame.length_ms = reader.ReadUInt16();
+                    int targetCount = reader.ReadInt32();
+                    frame.targets = new ushort[targetCount];
+                    for (int targetIndex = 0; targetIndex < targetCount; targetIndex++)
                     {
-                        frame.length_ms = (ushort)length_ms;
+                        frame.targets[targetIndex] = reader.ReadUInt16();
                     }
-                    XmlAttribute targetattr = frameKey.Attributes[1];
-                    frame.setTargetsFromString(targetattr.Value, servoCount);
-
-                    frames.Add(frame);
+                    sequence.frames.Add(frame);
                 }
-                sequence.frames = frames;
-
                 sequences.Add(sequence);
-            }
 
+            }
             return sequences;
         }
+
 
 
         /// <summary>

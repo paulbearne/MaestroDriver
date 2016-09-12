@@ -47,6 +47,10 @@ namespace Pololu.Usc.Sequencer
             {
                 privateTargets = value;
             }
+            get
+            {
+                return privateTargets;
+            }
         }
 
         /// <summary>

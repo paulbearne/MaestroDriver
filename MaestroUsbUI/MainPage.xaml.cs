@@ -1,4 +1,5 @@
 ﻿using MaestroUsb;
+using MaestroUsbUI.Pages;
 using Pololu.Usc;
 using System;
 using System.Collections.Generic;
@@ -317,6 +318,41 @@ namespace MaestroUsbUI
         {
             Brush whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
             brComms.BorderBrush = whiteBrush;
+        }
+
+        private void btnArm_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            Brush blueBrush = new SolidColorBrush(Windows.UI.Colors.SlateBlue);
+            brArm.BorderBrush = blueBrush;
+        }
+
+        private void btnArm_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            Brush whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
+            brArm.BorderBrush = whiteBrush;
+
+        }
+
+        private void btnArm_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            this.Frame.Navigate(typeof(RoboticArmPage), Globals.maestroBoard);
+        }
+
+        private void btnBratt_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            Brush whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
+            brBrat.BorderBrush = whiteBrush;
+        }
+
+        private void btnBratt_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            Brush blueBrush = new SolidColorBrush(Windows.UI.Colors.SlateBlue);
+            brBrat.BorderBrush = blueBrush;
+        }
+
+        private void btnBratt_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            this.Frame.Navigate(typeof(BratBipedPage), Globals.maestroBoard);
         }
     }
 }

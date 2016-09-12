@@ -94,5 +94,35 @@
                    ToolTipService.ToolTip="Servo Control Panel" />
 
         </Border>
+        <Border Name="brArm"
+                Width="122"
+                Height="122"
+                Margin="150,545,462,101"
+                BorderBrush="White">
+            <Image Name="btnArm"
+                   Width="120"
+                   Height="120"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   PointerEntered="btnArm_PointerEntered"
+                   PointerExited="btnArm_PointerExited"
+                   Source="Assets/robot-21.png"
+                   Tapped="btnArm_Tapped" />
+        </Border>
+        <Border Name="brBrat"
+                Width="122"
+                Height="122"
+                Margin="580,545,322,101"
+                BorderBrush="White">
+            <Image Name="btnBratt"
+                   Width="120"
+                   Height="120"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   PointerEntered="btnBratt_PointerEntered"
+                   PointerExited="btnBratt_PointerExited"
+                   Source="Assets/robot.png"
+                   Tapped="btnBratt_Tapped" />
+        </Border>
     </Grid>
 </Page>

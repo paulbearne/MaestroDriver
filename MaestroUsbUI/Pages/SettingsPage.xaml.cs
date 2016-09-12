@@ -59,6 +59,7 @@ namespace MaestroUsbUI
                 {
                     // add a speed , acceleration and target controls to the app
                     channelSettings[i] = new ChannelSettingsControl();
+
                     channelSettings[i].ChannelNumber = i;
                     ControlPanel.Children.Add(channelSettings[i]);
                     channelSettings[i].IsEnabled = false;
@@ -97,11 +98,12 @@ namespace MaestroUsbUI
                 // add a speed , acceleration and target controls to the app
                 channelSettings[i] = new ChannelSettingsControl();
                 channelSettings[i].ChannelNumber = i;
+                
                 channelSettings[i].Acceleration = settings.channelSettings[i].acceleration;
                 channelSettings[i].Speed = settings.channelSettings[i].speed;
                 channelSettings[i].MinPosition = settings.channelSettings[i].minimum;
                 channelSettings[i].MaxPosition = settings.channelSettings[i].maximum;
-                channelSettings[i].Name = settings.channelSettings[i].name;
+                channelSettings[i].ServoName = settings.channelSettings[i].name;
                 channelSettings[i].Mode = settings.channelSettings[i].mode;
                 channelSettings[i].homeMode = settings.channelSettings[i].homeMode;
                 channelSettings[i].Range = (Int16)settings.channelSettings[i].range;
@@ -134,7 +136,7 @@ namespace MaestroUsbUI
                 settings.channelSettings[i].speed =channelSettings[i].Speed;
                 settings.channelSettings[i].minimum =(UInt16)(channelSettings[i].MinPosition * 4) ;
                 settings.channelSettings[i].maximum = (UInt16)(channelSettings[i].MaxPosition * 4);
-                settings.channelSettings[i].name = channelSettings[i].Name;
+                settings.channelSettings[i].name = channelSettings[i].ServoName;
                 settings.channelSettings[i].mode = channelSettings[i].Mode;
                 settings.channelSettings[i].homeMode = channelSettings[i].homeMode;
                 settings.channelSettings[i].range = (UInt16)channelSettings[i].Range;

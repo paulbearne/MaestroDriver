@@ -20,8 +20,8 @@ namespace MaestroUsbUI
         private MaestroDeviceListItem maestroDevice;
          // maestro settings
         private UscSettings settings;
-        MaestroControl[] maestroChannels;
-        ServoStatus[] servoStatus;
+        private MaestroControl[] maestroChannels;
+        private ServoStatus[] servoStatus;
         public static Guid DeviceInterfaceClass = new Guid("{e0fbe39f-7670-4db6-9b1a-1dfb141014a7}");
         public ManualControl()
         {
@@ -71,7 +71,7 @@ namespace MaestroUsbUI
             
             settings = await maestroDevice.Maestro.getUscSettings();
             
-            await maestroDevice.Maestro.getMaestroVariables();
+            await maestroDevice.Maestro.updateMaestroVariables();
             Task.WaitAll();  // wait until we have all the data
             Connected = true;
             tbDeviceName.Text = maestroDevice.Name + " Connected";
@@ -102,7 +102,7 @@ namespace MaestroUsbUI
         {
             if (maestroDevice.Maestro.microMaestro)
             {
-                await maestroDevice.Maestro.getMaestroVariables();
+                await maestroDevice.Maestro.updateMaestroVariables();
                 maestroChannels[channel].Acceleration = Convert.ToUInt16(settings.channelSettings[channel].acceleration);
                 maestroChannels[channel].Speed = Convert.ToUInt16(settings.channelSettings[channel].speed);
                 // position / 4 as it returns it in 1/4 microseconds

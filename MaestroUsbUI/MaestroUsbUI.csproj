@@ -115,6 +115,12 @@
     <Compile Include="Control\NumberSpinnerControl.xaml.cs">
       <DependentUpon>NumberSpinnerControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Pages\BratBipedPage.xaml.cs">
+      <DependentUpon>BratBipedPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Pages\RoboticArmPage.xaml.cs">
+      <DependentUpon>RoboticArmPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Pages\CommsPage.xaml.cs">
       <DependentUpon>CommsPage.xaml</DependentUpon>
     </Compile>
@@ -137,9 +143,33 @@
     <None Include="MaestroUsbUI_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\brat03.jpg" />
+    <Content Include="Assets\bratblk.png" />
+    <Content Include="Assets\btdancedepressed.png" />
+    <Content Include="Assets\btdancepressed.png" />
+    <Content Include="Assets\btkickdepressed.png" />
+    <Content Include="Assets\btkickpressed.png" />
+    <Content Include="Assets\btnavdowndepressed.png" />
+    <Content Include="Assets\btnavdownpressed.png" />
+    <Content Include="Assets\btnavleftdepressed.png" />
+    <Content Include="Assets\btnavleftpressed.png" />
+    <Content Include="Assets\btnavrightdepressed.png" />
+    <Content Include="Assets\btnavrightpressed.png" />
+    <Content Include="Assets\btnavupdepressed.png" />
+    <Content Include="Assets\btnavuppressed.png" />
+    <Content Include="Assets\btngetupFront.png" />
+    <Content Include="Assets\btnnavup.png" />
+    <Content Include="Assets\btnupokdepressed.png" />
+    <Content Include="Assets\btnupokpressed.png" />
     <Content Include="Assets\cogwheel.png" />
+    <Content Include="Assets\lcd.png" />
     <Content Include="Assets\networking-1.png" />
+    <Content Include="Assets\onoffbtnoff.png" />
+    <Content Include="Assets\onoffbtnon.png" />
     <Content Include="Assets\remote-access.png" />
+    <Content Include="Assets\robot-21.png" />
+    <Content Include="Assets\robot.png" />
+    <Content Include="Assets\Square150x150Logo.scale-100.png" />
     <Content Include="Control\btndown.png" />
     <Content Include="Control\btnup.png" />
     <Content Include="Assets\SplashScreen.scale-100.png" />
@@ -176,6 +206,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Control\NumberSpinnerControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Pages\BratBipedPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Pages\RoboticArmPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

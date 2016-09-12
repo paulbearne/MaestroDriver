@@ -1,0 +1,36 @@
+﻿<Page x:Class="MaestroUsbUI.Pages.RoboticArmPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:local="using:MaestroUsbUI.Pages"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <StackPanel Orientation="Vertical">
+            <StackPanel Height="55"
+                        Margin="0,0,0,0"
+                        BorderThickness="0"
+                        Orientation="Horizontal">
+                <AppBarButton Name="btnBack"
+                              Click="btnBack_Click"
+                              Icon="Back"
+                              ToolTipService.ToolTip="Return to Home Page" />
+                <TextBlock Name="Header"
+                           Width="897"
+                           Height="35"
+                           FontSize="25"
+                           FontWeight="Bold"
+                           Text="Servo Control"
+                           TextAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock Name="tbDeviceName"
+                       Height="35"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center"
+                       Text="Not Connected" />
+
+        </StackPanel>
+    </Grid>
+</Page>

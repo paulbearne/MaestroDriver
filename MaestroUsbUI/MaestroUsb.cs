@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using Windows.Storage;
 using System.IO;
 using System.Xml;
+using Windows.Data.Xml.Dom;
 
 namespace MaestroUsb
 {
@@ -759,6 +760,18 @@ namespace MaestroUsb
             return (ushort)(us * 4M);
         }
 
+        public UInt16 angleToMicroseconds(byte channel,double angle)
+        {
+            UInt16 us = Convert.ToUInt16(((((settings.channelSettings[channel].maximum - settings.channelSettings[channel].minimum) / 180) * angle) )+settings.channelSettings[channel].minimum);
+            return (UInt16)(us);
+        }
+
+        public UInt16 microsecondsToAngle(byte channel, ushort us)
+        {
+            UInt16 angle = Convert.ToUInt16(us  / (( settings.channelSettings[channel].maximum - settings.channelSettings[channel].minimum) / 180));
+            return (UInt16)(angle);
+        }
+
         /// <summary>
         /// The approximate number of microseconds represented by the servo
         /// period when PARAMETER_SERVO_PERIOD is set to this value.
@@ -946,8 +959,15 @@ namespace MaestroUsb
         /// <returns></returns>
         public async Task<UscSettings> getUscSettings()
         {
+            
             settings = new UscSettings();
-            string fname = ApplicationData.Current.LocalFolder.Path + "\\" + maestroDevice.Id;
+            BinaryReader reader;
+            char[] delimiterChars = { '#', '#', '#' };
+
+            string idText = maestroDevice.Id;
+            string[] idTextSplit = idText.Split(delimiterChars);
+            string name = idTextSplit[2].Replace("&", "");
+            string fname = ApplicationData.Current.LocalFolder.Path + "\\" + name + ".cfg" ;
 
             settings.serialMode = (uscSerialMode)( await getRawParameter(uscParameter.PARAMETER_SERIAL_MODE));
             settings.fixedBaudRate = convertSpbrgToBps(await getRawParameter(uscParameter.PARAMETER_SERIAL_FIXED_BAUD_RATE));
@@ -1051,25 +1071,25 @@ namespace MaestroUsb
             
             if (File.Exists(fname))
             {
-                // Get names for servos from the registry.
-                XmlDocument settingsFile = new XmlDocument();
-                settingsFile.Load(File.OpenRead(fname));
-                for (byte i = 0; i < servoCount; i++)
+                // read names from our text file
+                reader = new BinaryReader(File.Open(fname, FileMode.Open));
+               
                 {
-                    settings.channelSettings[i].name = "";
-                    if ( settingsFile != null)
+                    // should be equal to servocount for the device is not set them to blank
+                    for (int i = 0; i < settings.servoCount; i++)
                     {
-                        if (settingsFile.Attributes[i].Name.Contains("servoNames"))
-                        {
-                            settings.channelSettings[i].name = settingsFile.Attributes[i].Value.ToString(); // example value
-                        }
+                        // Use a tab to indent each line of the file.
+                        settings.channelSettings[i].name = "";
+                        settings.channelSettings[i].name = reader.ReadString();
                     }
+                   
                 }
 
+                Boolean hasScript = reader.ReadBoolean();
                 // Get the script from the registry
-                if (localSettings.Containers.ContainsKey("script"))
+                if (hasScript)
                 {
-                    string script = localSettings.Containers["script"].ToString();
+                    string script = reader.ReadString();
                     try
                     {
                         // compile it to get the checksum
@@ -1092,7 +1112,8 @@ namespace MaestroUsb
                     }
 
                     // Get the sequences from the registry.
-                    settings.sequences = Pololu.Usc.Sequencer.Sequence.readSequencesFromRegistry(settingsFile,fname, servoCount);
+                    settings.sequences = Pololu.Usc.Sequencer.Sequence.readSequencesFromRegistry(reader,servoCount);
+                    reader.Dispose();
                 }
             }
 
@@ -1107,7 +1128,12 @@ namespace MaestroUsb
         /// <param name="newScript"></param>
         public async void setUscSettings(UscSettings settings, bool newScript)
         {
-            string fname = ApplicationData.Current.LocalFolder.Path + "\\" + maestroDevice.Id;
+            char[] delimiterChars = { '#', '#', '#' };
+            BinaryWriter writer;
+            string idText = maestroDevice.Id;
+            string[] idTextSplit = idText.Split(delimiterChars);
+            string name = idTextSplit[2].Replace("&", "");
+            string fname = ApplicationData.Current.LocalFolder.Path + "\\" + name + ".cfg";
             await setRawParameter(uscParameter.PARAMETER_SERIAL_MODE, (byte)settings.serialMode);
             await setRawParameter(uscParameter.PARAMETER_SERIAL_FIXED_BAUD_RATE, convertBpsToSpbrg(settings.fixedBaudRate));
             await setRawParameter(uscParameter.PARAMETER_SERIAL_ENABLE_CRC, (ushort)(settings.enableCrc ? 1 : 0));
@@ -1154,8 +1180,8 @@ namespace MaestroUsb
             {
                 File.Delete(fname);
             }
-            XmlDocument settingsFile = new XmlDocument();
-            
+            writer = new BinaryWriter(File.Create(fname));
+
             byte ioMask = 0;
             byte outputMask = 0;
             byte[] channelModeBytes = new byte[6] { 0, 0, 0, 0, 0, 0 };
@@ -1164,8 +1190,8 @@ namespace MaestroUsb
             {
                 
                // servosetting.name = "";  // don't support naming yet
-                XmlAttribute attr = settingsFile.CreateAttribute("servoName" + i.ToString("d2"));
-                attr.Value = settings.channelSettings[i].name;
+                writer.Write(settings.channelSettings[i].name);
+                
                 
                // regSettings.Add("servoName" + i.ToString("d2"), servosetting.name);
                 //key.SetValue("servoName" + i.ToString("d2"), setting.name, RegistryValueKind.String);
@@ -1222,9 +1248,10 @@ namespace MaestroUsb
                     await setRawParameter(uscParameter.PARAMETER_CHANNEL_MODES_0_3 + i, channelModeBytes[i]);
                 }
             }
-
+            writer.Write(newScript);
             if (newScript)
             {
+                
                 setScriptDone(1); // stop the script
 
                 // load the new script
@@ -1245,14 +1272,13 @@ namespace MaestroUsb
                 writeScript(byteList);
                 await setRawParameter(uscParameter.PARAMETER_SCRIPT_CRC, program.getCRC());
 
-                // Save the script in the registry
-                XmlAttribute attr = settingsFile.CreateAttribute("script");
-                attr.Value = settings.script;
+                writer.Write(byteList.ToString());
             }
 
-            Pololu.Usc.Sequencer.Sequence.saveSequencesInRegistry(settings.sequences, settingsFile,fname);
+            Pololu.Usc.Sequencer.Sequence.saveSequencesInRegistry(settings.sequences,writer);
 
-
+            writer.Flush();
+            writer.Dispose();
         }
 
         /// <summary>
@@ -1596,7 +1622,7 @@ namespace MaestroUsb
         /// <summary>
         /// read maestro variables 
         /// </summary>
-        public async Task<bool> getMaestroVariables()
+        public async Task<bool> updateMaestroVariables()
         {
             try
             {
@@ -1968,7 +1994,7 @@ namespace MaestroUsb
         }
 
 
-        private void reinitialize(int waitTime)
+        private async void reinitialize(int waitTime)
         {
             try
             {
@@ -1983,9 +2009,9 @@ namespace MaestroUsb
             if (!microMaestro)
             {
                 // Flush out any spurious performance flags that might have occurred.
-                getMaestroVariables();
+               bool variablesread = await updateMaestroVariables();
             }
-            Task.Delay(waitTime);
+             await Task.Delay(waitTime);
         }
 
         public void clearErrors()

@@ -13,6 +13,7 @@ namespace MaestroUsbUI.Control
         private Int16 speed = 0;
         private UInt16 acceleration = 0;
         private byte channel = 0;
+        private string servoName = "";
         private UInt16 target = 1500;
         private UInt16 min = 1000;
         private UInt16 max = 2500;
@@ -20,6 +21,9 @@ namespace MaestroUsbUI.Control
         private UInt16 nuetral8b = 1500;
         private ChannelMode mode = ChannelMode.Servo;
         private HomeMode homemode = HomeMode.Off;
+
+        public delegate void OnNameChanged(byte Channel, string newName);
+        public event OnNameChanged nameChanged;
 
         public delegate void OnTargetChanged(byte Channel, UInt16 newTarget);
         public event OnTargetChanged targetChanged;
@@ -65,6 +69,19 @@ namespace MaestroUsbUI.Control
                 target = (UInt16)(value / 4);
                 spTarget.Text = target.ToString();
 
+            }
+        }
+
+        public string ServoName
+        {
+            get
+            {
+                return servoName;
+            }
+            set
+            {
+                servoName = value;
+                tbName.Text = servoName;
             }
         }
 
@@ -447,6 +464,15 @@ namespace MaestroUsbUI.Control
                 {
                     homeModeChanged(channel,homemode);
                 }
+            }
+        }
+
+        private void tbName_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            servoName = tbName.Text;
+            if (nameChanged != null)
+            {
+                nameChanged(channel, servoName);
             }
         }
     }
