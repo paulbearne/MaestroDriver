@@ -1282,19 +1282,6 @@ namespace MaestroUsb
         }
 
         /// <summary>
-        /// Opens the local registry file
-        /// windows store , uwp and iot device do not support regestry access
-        /// this function is only here as a stop gap and will change so use with caution
-        /// </summary>
-        private void openRegistryKey()
-        {
-            
-            keyname = "Software\\Pololu\\Maestro USB servo controller\\" + maestroDevice.productId.ToString();
-            regSettings = (ApplicationDataCompositeValue)localSettings.Values[keyname];
-
-        }
-
-        /// <summary>
         /// Sets the Servo Parameters within the Usc Settings
         /// </summary>
         /// <param name="settings"></param>

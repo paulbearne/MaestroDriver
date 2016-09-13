@@ -194,11 +194,24 @@ namespace MaestroUsbUI
         private void slPosition_ValueChanged(object sender, Windows.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
         {
             position = Convert.ToUInt16(slPosition.Value);
+            if (Convert.ToUInt16(tbTarget.Text) != position)
+            {
+                tbTarget.Text = position.ToString();
+            }
             if (positionChanged != null)
             {
                 positionChanged(Convert.ToByte(channel),position);
             }
             
+        }
+
+        private void tbTarget_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (Convert.ToUInt16(tbTarget.Text) != position)
+            {
+                position = Convert.ToUInt16(tbTarget.Text);
+                slPosition.Value = position;
+            }
         }
     }
 }

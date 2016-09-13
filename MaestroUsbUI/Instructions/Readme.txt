@@ -128,3 +128,6 @@ add the following in the <Capabilities> section
 		<Function Type="name:vendorSpecific" />
 	  </Device>
   </DeviceCapability> 
+
+  you will also need to have bytecode.dll added to your project referances which is part of the Pololu Sdk available here 
+  https://www.pololu.com/file/download/pololu-usb-sdk-140604.zip?file_id=0J765

@@ -5,7 +5,7 @@
              xmlns:local="using:MaestroUsbUI"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              d:DesignHeight="40"
-             d:DesignWidth="500"
+             d:DesignWidth="600"
              mc:Ignorable="d">
 
     <Grid Margin="0,0,0,0">
@@ -30,6 +30,23 @@
                         TickPlacement="Outside"
                         ValueChanged="slPosition_ValueChanged"
                         Value="1500" />
+                <StackPanel Width="100"
+                            Height="40"
+                            Margin="5,0,0,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            BorderBrush="Black"
+                            BorderThickness="1"
+                            Orientation="Horizontal">
+                    <TextBox Name="tbTarget"
+                             Margin="5,0,0,0"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             BorderThickness="0"
+                             InputScope="Number"
+                             PlaceholderText="1500"
+                             TextChanged="tbTarget_TextChanged" />
+                </StackPanel>
                 <StackPanel Height="40"
                             Margin="10,0,0,0"
                             BorderBrush="Black"

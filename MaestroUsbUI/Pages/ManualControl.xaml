@@ -28,15 +28,15 @@
         </StackPanel>
         <TextBlock x:Name="tbDeviceName" Text="Device Name" />
         <StackPanel Orientation="Horizontal">
-            <TextBlock Margin="280,0,0,0" Text="CN" />
-            <TextBlock Width="150"
+            <TextBlock Margin="230,0,0,0" Text="CN" />
+            <TextBlock Width="200"
                        Margin="50,0,0,0"
                        HorizontalAlignment="Left"
                        VerticalAlignment="Center"
-                       Text="Position"
+                       Text="Target"
                        TextAlignment="Center" />
             <TextBlock Width="85"
-                       Margin="60,0,0,0"
+                       Margin="115,0,0,0"
                        Padding="0"
                        Text="Speed"
                        TextAlignment="Center" />
@@ -47,7 +47,8 @@
         <ScrollViewer x:Name="svPanel"
                       Height="650"
                       VerticalScrollMode="Enabled">
-            <StackPanel x:Name="maestroPanel" Orientation="Vertical" />
+            <StackPanel Name="maestroPanel" Orientation="Vertical" />
+
         </ScrollViewer>
 
 
