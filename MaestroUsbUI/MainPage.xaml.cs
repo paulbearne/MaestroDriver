@@ -10,6 +10,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.System.Threading;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -24,7 +25,7 @@ using Windows.UI.Xaml.Navigation;
 namespace MaestroUsbUI
 {
 
-   
+    
 
     public class MaestroBoard
     {
@@ -42,15 +43,15 @@ namespace MaestroUsbUI
         //  single maestro board
         public static Guid DeviceInterfaceClass = new Guid("{e0fbe39f-7670-4db6-9b1a-1dfb141014a7}");
         public event EventHandler<NotifyType> maestroConnectionEvent;
+        
 
         public MainPage()
         {
             this.InitializeComponent();
             
-
-
-
         }
+
+      
 
         protected override void OnNavigatedTo(NavigationEventArgs eventArgs)
         {

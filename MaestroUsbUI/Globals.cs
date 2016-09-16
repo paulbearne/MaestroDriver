@@ -7,6 +7,16 @@ using System.Threading.Tasks;
 
 namespace MaestroUsbUI
 {
+    public class udpBufferItem
+    {
+        public string ipAddress;
+        public string message;
+        public udpBufferItem(string ip, string data)
+        {
+            ipAddress = ip;
+            message = data;
+        }
+    }
     /// <summary>
     /// Class hols any global variables
     /// </summary>
@@ -16,6 +26,9 @@ namespace MaestroUsbUI
         public static MaestroDeviceManager maestroManager;
         public static MaestroBoard maestroBoard;
         public static MaestroDeviceListItem maestroDevice;
-        
+        public static List<udpBufferItem> commandBuffer;
+        public static UdpServer udpserver;
+        public static string locatorMessage;
+
     }
 }

@@ -547,8 +547,7 @@ namespace MaestroUsb
         public Byte privateFirmwareVersionMajor = 0xFF;
         public Byte privateFirmwareVersionMinor = 0xFF;
         private ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
-        private ApplicationDataCompositeValue regSettings;
-        private string keyname;
+       
 
         /// <summary>
         /// Constructor does some initialization 
@@ -700,7 +699,7 @@ namespace MaestroUsb
         /// </summary>
         /// <param name="exponentialSpeed"></param>
         /// <returns></returns>
-        private static ushort exponentialSpeedToNormalSpeed(byte exponentialSpeed)
+        public ushort exponentialSpeedToNormalSpeed(byte exponentialSpeed)
         {
             // Maximum value of normalSpeed is 31*(1<<7)=3968
 
@@ -715,7 +714,7 @@ namespace MaestroUsb
         /// </summary>
         /// <param name="normalSpeed"></param>
         /// <returns></returns>
-        private static byte normalSpeedToExponentialSpeed(ushort normalSpeed)
+        public byte normalSpeedToExponentialSpeed(ushort normalSpeed)
         {
             ushort mantissa = normalSpeed;
             byte exponent = 0;
@@ -1759,10 +1758,11 @@ namespace MaestroUsb
         /// </summary>
         /// <param name="servo"></param>
         /// <param name="value"></param>
-        public void setSpeed(byte servo, ushort value)
+        public async void setSpeed(byte servo, ushort value)
         {
             try
             {
+                await setRawParameter(specifyServo(uscParameter.PARAMETER_SERVO0_SPEED, servo), normalSpeedToExponentialSpeed(value));
                 controlTransfer(0x40, (byte)uscRequest.REQUEST_SET_SERVO_VARIABLE, value, servo);
             }
             catch (Exception e)

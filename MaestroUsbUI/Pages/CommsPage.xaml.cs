@@ -52,6 +52,7 @@ namespace MaestroUsbUI
         {
             if (eventArgs.Parameter as MaestroBoard != null)
             {
+                Globals.locatorMessage = "Comms Setup ";
                 maestroDevice = (eventArgs.Parameter as MaestroBoard).maestro;
                 status.Text = maestroDevice.Name + " Connected";
                 updateSerialSettings(); 

@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
-using Windows.ApplicationModel.Background;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -17,10 +15,8 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
-namespace MaestroUsbUI
+namespace BratRemote
 {
-
-    
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.
     /// </summary>
@@ -30,50 +26,10 @@ namespace MaestroUsbUI
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
         /// </summary>
-        /// 
-
-       // private UdpServer udpserver;
-        private Timer timer;
-        
-        
-
         public App()
         {
             this.InitializeComponent();
             this.Suspending += OnSuspending;
-        }
-
-        private async void timerCallBack(object state)
-        {
-            // buid string with capabilities built in
-            string message = Globals.locatorMessage + Globals.udpserver.GetLocalIp();
-            if (Globals.udpserver != null)
-            {
-                await Globals.udpserver.SendMessage(message);
-            }
-        }
-
-        private void startLocatorServer()
-        {
-            Globals.udpserver = new UdpServer(9999);
-            Globals.udpserver.StartListener();
-            Globals.udpserver.OnDataReceived += Udpserver_OnDataReceived;
-            Globals.udpserver.OnError += Udpserver_OnError;
-            Globals.locatorMessage = "None";
-            timer = new Timer(timerCallBack, null, TimeSpan.FromSeconds(5).Milliseconds, 5000);
-        }
-
-        private void Udpserver_OnError(string message)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void Udpserver_OnDataReceived(string senderIp, string data)
-        {
-            // we have recieved data so stop broadcasting 
-            
-           
-            
         }
 
         /// <summary>
@@ -118,8 +74,6 @@ namespace MaestroUsbUI
                     // parameter
                     rootFrame.Navigate(typeof(MainPage), e.Arguments);
                 }
-                // should be up and running start broadcasting our presence
-                startLocatorServer();
                 // Ensure the current window is active
                 Window.Current.Activate();
             }
@@ -148,7 +102,5 @@ namespace MaestroUsbUI
             //TODO: Save application state and stop any background activity
             deferral.Complete();
         }
-
-
     }
 }

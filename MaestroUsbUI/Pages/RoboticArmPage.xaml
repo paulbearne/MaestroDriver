@@ -6,7 +6,7 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       mc:Ignorable="d">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Grid>
         <StackPanel Orientation="Vertical">
             <StackPanel Height="55"
                         Margin="0,0,0,0"
@@ -30,6 +30,15 @@
                        HorizontalAlignment="Left"
                        VerticalAlignment="Center"
                        Text="Not Connected" />
+
+        </StackPanel>
+        <StackPanel Margin="0,84,0,-2" Orientation="Horizontal">
+            <StackPanel Width="800"
+                        Margin="0,0,0,0"
+                        Orientation="Vertical">
+                <Grid />
+
+            </StackPanel>
 
         </StackPanel>
     </Grid>

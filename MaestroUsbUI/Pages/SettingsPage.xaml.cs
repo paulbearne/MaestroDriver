@@ -75,6 +75,7 @@ namespace MaestroUsbUI
             
             if (maestroDevice != null)
             {
+                Globals.locatorMessage = "Settings ";
                 // remove all the panels from the display
                 ControlPanel.Children.Clear();
                 channelSettings = null;

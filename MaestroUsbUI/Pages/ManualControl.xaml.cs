@@ -38,6 +38,7 @@ namespace MaestroUsbUI
 
             if (eventArgs.Parameter as MaestroBoard != null)
             {
+                Globals.locatorMessage = "Manual Control ";
                 maestroDevice = (eventArgs.Parameter as MaestroBoard).maestro;
                 tbDeviceName.Text = maestroDevice.Name + " Connected";
                 drawMaestroControls();
