@@ -10,6 +10,7 @@
     </Page.Resources>
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
         <TextBlock Margin="418,0,418,733"
                    HorizontalAlignment="Center"
                    Padding="0,10"
@@ -44,98 +45,110 @@
                        Text="Not Connected"
                        TextAlignment="Left" />
         </StackPanel>
-        <Border Name="brSettings"
-                Width="122"
-                Height="122"
-                Margin="440,320,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-                BorderBrush="White"
-                BorderThickness="1"
-                RenderTransformOrigin="1.967,1.557">
-            <Image x:Name="btnSettings"
-                   Width="120"
-                   Height="120"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   PointerEntered="btnSettings_PointerEntered"
-                   PointerExited="btnSettings_PointerExited"
-                   RenderTransformOrigin="0,1"
-                   Source="Assets/cogwheel.png"
-                   Tapped="btnSettings_Tapped"
-                   ToolTipService.ToolTip="Main Board Settings" />
-        </Border>
-        <Border Name="brComms"
-                Width="122"
-                Height="122"
-                Margin="161,320,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-                BorderBrush="White"
-                BorderThickness="1"
-                RenderTransformOrigin="1.967,1.557">
-            <Image x:Name="btnComms"
-                   Width="120"
-                   Height="120"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Center"
-                   PointerEntered="btnComms_PointerEntered"
-                   PointerExited="btnComms_PointerExited"
-                   RenderTransformOrigin="0.375,0.342"
-                   Source="Assets/networking-1.png"
-                   Tapped="btnComms_Tapped"
-                   ToolTipService.ToolTip="Comms Settings" />
-        </Border>
-        <Border Name="brControl"
-                Width="122"
-                Height="122"
-                Margin="720,325,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-                BorderBrush="White"
-                BorderThickness="1"
-                RenderTransformOrigin="1.967,1.557">
-            <Image x:Name="btnControl"
-                   Width="120"
-                   Height="120"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   PointerEntered="btnControl_PointerEntered"
-                   PointerExited="btnControl_PointerExited"
-                   Source="Assets/remote-access.png"
-                   Tapped="btnControl_Tapped"
-                   ToolTipService.ToolTip="Servo Control Panel" />
+        <StackPanel Orientation="Vertical">
+            <StackPanel Height="400" Orientation="Horizontal">
 
-        </Border>
-        <Border Name="brArm"
-                Width="122"
-                Height="122"
-                Margin="150,545,462,101"
-                BorderBrush="White">
-            <Image Name="btnArm"
-                   Width="120"
-                   Height="120"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   PointerEntered="btnArm_PointerEntered"
-                   PointerExited="btnArm_PointerExited"
-                   Source="Assets/robot-21.png"
-                   Tapped="btnArm_Tapped" />
-        </Border>
-        <Border Name="brBrat"
-                Width="122"
-                Height="122"
-                Margin="580,545,322,101"
-                BorderBrush="White">
-            <Image Name="btnBratt"
-                   Width="120"
-                   Height="120"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   PointerEntered="btnBratt_PointerEntered"
-                   PointerExited="btnBratt_PointerExited"
-                   Source="Assets/robot.png"
-                   Tapped="btnBratt_Tapped" />
-        </Border>
+
+                <Border x:Name="brComms"
+                        Width="122"
+                        Height="122"
+                        Margin="180,200,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        BorderBrush="White"
+                        BorderThickness="1"
+                        RenderTransformOrigin="1.967,1.557">
+                    <Image x:Name="btnComms"
+                           Width="120"
+                           Height="120"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           PointerEntered="btnComms_PointerEntered"
+                           PointerExited="btnComms_PointerExited"
+                           RenderTransformOrigin="-0.617,0.367"
+                           Source="Assets/networking-1.png"
+                           Tapped="btnComms_Tapped"
+                           ToolTipService.ToolTip="Comms Settings" />
+                </Border>
+                <Border x:Name="brSettings"
+                        Width="122"
+                        Height="122"
+                        Margin="120,200,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        BorderBrush="White"
+                        BorderThickness="1"
+                        RenderTransformOrigin="1.967,1.557">
+                    <Image x:Name="btnSettings"
+                           Width="120"
+                           Height="120"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           PointerEntered="btnSettings_PointerEntered"
+                           PointerExited="btnSettings_PointerExited"
+                           RenderTransformOrigin="0,1"
+                           Source="Assets/cogwheel.png"
+                           Tapped="btnSettings_Tapped"
+                           ToolTipService.ToolTip="Main Board Settings" />
+                </Border>
+                <Border x:Name="brControl"
+                        Width="122"
+                        Height="122"
+                        Margin="120,200,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        BorderBrush="White"
+                        BorderThickness="1"
+                        RenderTransformOrigin="1.967,1.557">
+                    <Image x:Name="btnControl"
+                           Width="120"
+                           Height="120"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           PointerEntered="btnControl_PointerEntered"
+                           PointerExited="btnControl_PointerExited"
+                           Source="Assets/remote-access.png"
+                           Tapped="btnControl_Tapped"
+                           ToolTipService.ToolTip="Servo Control Panel" />
+
+                </Border>
+            </StackPanel>
+            <StackPanel Height="200" Orientation="Horizontal">
+                <Border Name="brArm"
+                        Width="122"
+                        Height="122"
+                        Margin="295,0,0,0"
+                        BorderBrush="White"
+                        BorderThickness="1">
+                    <Image Name="btnArm"
+                           Width="120"
+                           Height="120"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           PointerEntered="btnArm_PointerEntered"
+                           PointerExited="btnArm_PointerExited"
+                           Source="Assets/robot-21.png"
+                           Tapped="btnArm_Tapped"
+                           ToolTipService.ToolTip="Robotic Arm Control Panel" />
+                </Border>
+                <Border Name="brBrat"
+                        Width="122"
+                        Height="122"
+                        Margin="120,0,0,0"
+                        BorderBrush="White"
+                        BorderThickness="1">
+                    <Image Name="btnBratt"
+                           Width="120"
+                           Height="120"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           PointerEntered="btnBratt_PointerEntered"
+                           PointerExited="btnBratt_PointerExited"
+                           Source="Assets/robot.png"
+                           Tapped="btnBratt_Tapped"
+                           ToolTipService.ToolTip="Brat Biped Conrtol Panel" />
+                </Border>
+            </StackPanel>
+        </StackPanel>
     </Grid>
 </Page>

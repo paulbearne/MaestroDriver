@@ -39,6 +39,7 @@ namespace MaestroUsbUI
     public sealed partial class MainPage : Page
     {
         
+        private UdpServer udpserver;
         private ObservableCollection<MaestroDeviceListItem> listOfDevices;
         //  single maestro board
         public static Guid DeviceInterfaceClass = new Guid("{e0fbe39f-7670-4db6-9b1a-1dfb141014a7}");
@@ -48,10 +49,89 @@ namespace MaestroUsbUI
         public MainPage()
         {
             this.InitializeComponent();
+           /* Globals.locatorMessage = "Navigation";
+            Globals.tcpserver.OnDataReceived += Tcpserver_OnDataReceived;
+            Globals.tcpserver.OnError += Tcpserver_OnError;*/
             
         }
 
-      
+        private void Tcpserver_OnError(string message)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async void Tcpserver_OnDataReceived(string data)
+        {
+            if (data.Contains("Robot Arm"))
+            {
+                // switch to robot arm page make sure we are in Ui thread
+                await Dispatcher.RunAsync(
+                       CoreDispatcherPriority.Normal,
+                       new DispatchedHandler(() =>
+                       {
+                           this.Frame.Navigate(typeof(RoboticArmPage), Globals.maestroBoard);
+                       }));
+            }
+            if (data.Contains("Brat"))
+            {
+                // switch to robot arm page
+                await Dispatcher.RunAsync(
+                       CoreDispatcherPriority.Normal,
+                       new DispatchedHandler(() =>
+                       {
+                           this.Frame.Navigate(typeof(BratBipedPage), Globals.maestroBoard);
+                       }));
+            }
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            if (udpserver != null)
+            {
+                udpserver.Close();
+            }
+            base.OnNavigatedFrom(e);
+        }
+
+        // check page change
+        private async void pagechanged(string data, string senderIp)
+        {
+            if (data.Contains("Robot Arm"))
+            {
+                // switch to robot arm page make sure we are in Ui thread
+                await Dispatcher.RunAsync(
+                       CoreDispatcherPriority.Normal,
+                       new DispatchedHandler(() =>
+                       {
+                           this.Frame.Navigate(typeof(RoboticArmPage), Globals.maestroBoard);
+                       }));
+            }
+            if (data.Contains("Brat"))
+            {
+                // switch to robot arm page
+                await Dispatcher.RunAsync(
+                       CoreDispatcherPriority.Normal,
+                       new DispatchedHandler(() =>
+                       {
+                           this.Frame.Navigate(typeof(BratBipedPage), Globals.maestroBoard);
+                       }));
+            }
+            if (data.Contains("Navigation"))
+            {
+                
+            }
+        }
+
+        // handle remote page change
+        private void Commandserver_OnDataReceived(string senderIp, string data)
+        {
+           
+        }
+
+        private void Udpserver_OnError(string message)
+        {
+            throw new NotImplementedException();
+        }
 
         protected override void OnNavigatedTo(NavigationEventArgs eventArgs)
         {
@@ -63,9 +143,22 @@ namespace MaestroUsbUI
             DeviceListSource.Source = listOfDevices;
             // add callback for a device being selected
             lbDevices.SelectionChanged += LbDevices_SelectionChanged;
+            udpserver = new UdpServer(9998);
+            udpserver.StartListener();
+            //  Globals.commandBuffer = new List<udpBufferItem>();
+            udpserver.OnDataReceived += Commandserver_OnDataReceived;
+           
+            udpserver.OnError += Udpserver_OnError;
+            
+            Globals.udpserver.OnDataReceived += Udpserver_OnDataReceived;
+            Globals.locatorMessage = "Navigation";
 
         }
 
+        private void Udpserver_OnDataReceived(string senderIp, string data)
+        {
+            pagechanged(data, senderIp);
+        }
 
         private async void LbDevices_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

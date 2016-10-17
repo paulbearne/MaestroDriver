@@ -63,6 +63,13 @@ namespace MaestroUsbUI
             timer = new Timer(timerCallBack, null, TimeSpan.FromSeconds(5).Milliseconds, 5000);
         }
 
+        private void startServer()
+        {
+            Globals.tcpserver = new TcpServer(15000);
+            Globals.tcpserver.StartListener();
+                      
+        }
+
         private void Udpserver_OnError(string message)
         {
             throw new NotImplementedException();
@@ -89,6 +96,9 @@ namespace MaestroUsbUI
                 this.DebugSettings.EnableFrameRateCounter = false;
             }
 #endif
+            startServer();
+            startLocatorServer();
+            
             Frame rootFrame = Window.Current.Content as Frame;
 
             // Do not repeat app initialization when the Window already has content,
@@ -119,7 +129,7 @@ namespace MaestroUsbUI
                     rootFrame.Navigate(typeof(MainPage), e.Arguments);
                 }
                 // should be up and running start broadcasting our presence
-                startLocatorServer();
+                
                 // Ensure the current window is active
                 Window.Current.Activate();
             }

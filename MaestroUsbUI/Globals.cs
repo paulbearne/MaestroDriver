@@ -28,6 +28,7 @@ namespace MaestroUsbUI
         public static MaestroDeviceListItem maestroDevice;
         public static List<udpBufferItem> commandBuffer;
         public static UdpServer udpserver;
+        public static TcpServer tcpserver;
         public static string locatorMessage;
 
     }

@@ -73,17 +73,58 @@ namespace MaestroUsbUI.Pages
             udpserver.OnDataReceived += Commandserver_OnDataReceived;
             udpserver.OnError += Udpserver_OnError;
             Globals.udpserver.OnDataReceived += Udpserver_OnDataReceived;
+            Globals.locatorMessage = "Brat";
             
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            if (udpserver != null)
+            {
+                udpserver.Close();
+            }
+            base.OnNavigatedFrom(e);
+        }
+
+        // check page change
+        private async void pagechanged(string data, string senderIp)
+        {
+            if (data.Contains("Robot Arm"))
+            {
+                // switch to robot arm page make sure we are in Ui thread
+                await Dispatcher.RunAsync(
+                       CoreDispatcherPriority.Normal,
+                       new DispatchedHandler(() =>
+                       {
+                           this.Frame.Navigate(typeof(RoboticArmPage), Globals.maestroBoard);
+                       }));
+            }
+            if (data.Contains("Brat"))
+            {
+                
+            }
+            if (data.Contains("Navigation"))
+            {
+                // switch to robot arm page
+                await Dispatcher.RunAsync(
+                       CoreDispatcherPriority.Normal,
+                       new DispatchedHandler(() =>
+                       {
+                           this.Frame.Navigate(typeof(MainPage), Globals.maestroBoard);
+                       }));
+            }
+            await Dispatcher.RunAsync(
+                       CoreDispatcherPriority.Normal,
+                       new DispatchedHandler(() =>
+                       {
+                           tbTcpStatus.Text = "Connected to " + senderIp;
+                       }));
         }
 
         // handle remote page change
         private void Udpserver_OnDataReceived(string senderIp, string data)
         {
-            if (data.Contains("Robot Arm"))
-            {
-                // switch to robot arm page
-                this.Frame.Navigate(typeof(RoboticArmPage), Globals.maestroBoard);
-            }
+            pagechanged(data, senderIp);
         }
 
         private void Udpserver_OnError(string message)
@@ -93,12 +134,14 @@ namespace MaestroUsbUI.Pages
 
         private async void Commandserver_OnDataReceived(string senderIp, string data)
         {
+
             // we have recieved data so stop broadcasting 
             
             if (await doRemoteCommand(data, senderIp))
             {
 
             }
+            //pagechanged(data, senderIp);
 
         }
         
@@ -126,14 +169,12 @@ namespace MaestroUsbUI.Pages
                             cmdstring[6]= "value,cmd,6," + slAngle.Value.ToString();
                             
                         }));
-                
-                await udpserver.SendMessage(cmdstring[0], IpAddress);
-                await udpserver.SendMessage(cmdstring[1], IpAddress);
-                await udpserver.SendMessage(cmdstring[2], IpAddress);
-                await udpserver.SendMessage(cmdstring[3], IpAddress);
-                await udpserver.SendMessage(cmdstring[4], IpAddress);
-                await udpserver.SendMessage(cmdstring[5], IpAddress);
-                await udpserver.SendMessage(cmdstring[6], IpAddress);
+
+                for (int i = 0; i < 7; i++)
+                {
+                    await udpserver.SendMessage(cmdstring[i], IpAddress);
+                }
+
 
             }
             else
@@ -178,6 +219,10 @@ namespace MaestroUsbUI.Pages
                     if (message[0].Contains("cmd"))
                     {
                         if (message.Length == 2)
+                        {
+                            await Dispatcher.RunAsync(
+                        CoreDispatcherPriority.Normal,
+                        new DispatchedHandler(() =>
                         {
                             UInt16 cmdnumber = UInt16.Parse(message[1]);
                             switch (cmdnumber)
@@ -230,6 +275,7 @@ namespace MaestroUsbUI.Pages
                                     headThrust();
                                     break;
                             }
+                        }));
                         }
                     }
                 }
@@ -239,6 +285,7 @@ namespace MaestroUsbUI.Pages
 
         private async Task<bool> groupMove(int p1, int p2, int p3, int p4, int p5, int p6, int Speed)
         {
+
             UInt16 speed = maestroDevice.Maestro.normalSpeedToExponentialSpeed((UInt16)(Speed));
             bool done = false;
             for (byte channel = 0; channel < 6; channel++)
@@ -279,95 +326,112 @@ namespace MaestroUsbUI.Pages
 
         private async void walkForward(int angle)
         {
-            angle = (byte)(angle * Range);
-            if (stepN)
+            if (maestroDevice != null)
             {
-                angle = (byte)(90 + angle);
-                await groupMove(last_angle, last_angle, 75, last_angle, last_angle, 55, Speed);
-                await groupMove(angle, angle, 75, angle, angle, 55, Speed);
-                await groupMove(angle, angle, 90, angle, angle, 90, Speed);
-                stepN = !stepN;
+                angle = (byte)(angle * Range);
+                if (stepN)
+                {
+                    angle = (byte)(90 + angle);
+                    await groupMove(last_angle, last_angle, 75, last_angle, last_angle, 55, Speed);
+                    await groupMove(angle, angle, 75, angle, angle, 55, Speed);
+                    await groupMove(angle, angle, 90, angle, angle, 90, Speed);
+                    stepN = !stepN;
+                }
+                else
+                {
+                    angle = (byte)(90 - angle);
+                    await groupMove(last_angle, last_angle, 120, last_angle, last_angle, 105, Speed);
+                    await groupMove(angle, angle, 125, angle, angle, 105, Speed);
+                    await groupMove(angle, angle, 90, angle, angle, 90, Speed);
+                    stepN = !stepN;
+                }
+                last_angle = angle;
             }
-            else
-            {
-                angle = (byte)(90 - angle);
-                await groupMove(last_angle, last_angle, 120, last_angle, last_angle, 105, Speed);
-                await groupMove(angle, angle, 125, angle, angle, 105, Speed);
-                await groupMove(angle, angle, 90, angle, angle, 90, Speed);
-                stepN = !stepN;
-            }
-            last_angle = angle;
         }
 
         private async void turnRight(int angle)
         {
-            if (angle > 125)
-                angle = 125;
-            else if (angle < 110)
-                angle = 110;
-            await groupMove(90, 90, 90, 90, 90, 90, Speed);
-            await groupMove(90, 90, 75, 90, 90, 55, Speed);
-            await groupMove(90, 90, 75, 90, 90, 75, Speed);
-            await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 75, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 75, Speed);
-            await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 90, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 90, Speed);
-            await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 125, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 105, Speed);
-            await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 105, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 105, Speed);
-            await groupMove(angle, angle, 105, angle, angle, 105, Speed);
-            await groupMove(angle, angle, 90, angle, angle, 90, Speed);
-            await groupMove(90, 90, 90, 90, 90, 90, Speed);
-            last_angle = 90;
+            if (maestroDevice != null)
+            {
+                if (angle > 125)
+                    angle = 125;
+                else if (angle < 110)
+                    angle = 110;
+                await groupMove(90, 90, 90, 90, 90, 90, Speed);
+                await groupMove(90, 90, 75, 90, 90, 55, Speed);
+                await groupMove(90, 90, 75, 90, 90, 75, Speed);
+                await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 75, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 75, Speed);
+                await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 90, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 90, Speed);
+                await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 125, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 105, Speed);
+                await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 105, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 105, Speed);
+                await groupMove(angle, angle, 105, angle, angle, 105, Speed);
+                await groupMove(angle, angle, 90, angle, angle, 90, Speed);
+                await groupMove(90, 90, 90, 90, 90, 90, Speed);
+                last_angle = 90;
+            }
         }
 
         private async void turnLeft(int angle)
         {
-            
-            if (angle < 55)
-                angle = 55;
-            else if (angle > 70)
-                angle = 70;
-            await groupMove(90, 90, 90, 90, 90, 90, Speed);
-            await groupMove(90, 90, 125, 90, 90, 105, Speed);
-            await groupMove(90, 90, 105, 90, 90, 105, Speed);
-            await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 105, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 105, Speed);
-            await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 90, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 90, Speed);
-            await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 75, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 55, Speed);
-            await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 75, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 75, Speed);
-            await groupMove(angle, angle, 75, angle, angle, 75, Speed);
-            await groupMove(angle, angle, 90, angle, angle, 90, Speed);
-            await groupMove(90, 90, 90, 90, 90, 90, Speed);
-            last_angle = 90;
+            if (maestroDevice != null)
+            {
+                if (angle < 55)
+                    angle = 55;
+                else if (angle > 70)
+                    angle = 70;
+                await groupMove(90, 90, 90, 90, 90, 90, Speed);
+                await groupMove(90, 90, 125, 90, 90, 105, Speed);
+                await groupMove(90, 90, 105, 90, 90, 105, Speed);
+                await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 105, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 105, Speed);
+                await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 90, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 90, Speed);
+                await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 75, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 55, Speed);
+                await groupMove(angle + (90 - angle) / 2, angle + (90 - angle) / 2, 75, angle + (90 - angle) / 2, angle + (90 - angle) / 2, 75, Speed);
+                await groupMove(angle, angle, 75, angle, angle, 75, Speed);
+                await groupMove(angle, angle, 90, angle, angle, 90, Speed);
+                await groupMove(90, 90, 90, 90, 90, 90, Speed);
+                last_angle = 90;
+            }
         }
 
         private async void kickRight()
         {
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
-            await groupMove(90, 90, 48, 90, 90, 104, 500);
-            await groupMove(130, 35, 110, 90, 90, 110, 500);
-            await groupMove(70, 100, 110, 90, 90, 110, 250);
-            await groupMove(90, 90, 110, 90, 90, 110, 500);
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
-            last_angle = 90;
+            if (maestroDevice != null)
+            {
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+                await groupMove(90, 90, 48, 90, 90, 104, 500);
+                await groupMove(130, 35, 110, 90, 90, 110, 500);
+                await groupMove(70, 100, 110, 90, 90, 110, 250);
+                await groupMove(90, 90, 110, 90, 90, 110, 500);
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+                last_angle = 90;
+            }
         }
 
         private async void kickLeft()
         {
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
-            await groupMove(90, 90, 76, 90, 90, 132, 500);
-            await groupMove(90, 90, 70, 50, 145, 70, 500);
-            await groupMove(90, 90, 70, 110, 80, 70, 250);
-            await groupMove(90, 90, 70, 90, 90, 70, 500);
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
-            last_angle = 90;
+            if (maestroDevice != null)
+            {
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+                await groupMove(90, 90, 76, 90, 90, 132, 500);
+                await groupMove(90, 90, 70, 50, 145, 70, 500);
+                await groupMove(90, 90, 70, 110, 80, 70, 250);
+                await groupMove(90, 90, 70, 90, 90, 70, 500);
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+                last_angle = 90;
+            }
         }
 
         private async void headThrust()
         {
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
-            await groupMove(25, 45, 90, 155, 135, 90, 500);
-            await groupMove(70, 125, 90, 110, 65, 90, 300);
-            await Task.Delay(100);
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
-            last_angle = 90;
+            if (maestroDevice != null)
+            {
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+                await groupMove(25, 45, 90, 155, 135, 90, 500);
+                await groupMove(70, 125, 90, 110, 65, 90, 300);
+                await Task.Delay(100);
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+                last_angle = 90;
+            }
         }
 
 
@@ -398,27 +462,27 @@ namespace MaestroUsbUI.Pages
 
         private async void walkBackward(int angle)
         {
-            //  for (int i = 0; i < 2; i++)
-            // {
-            if (stepN)
+            if (maestroDevice != null)
             {
-                angle = (byte)(90 + angle);
-                await groupMove(last_angle, last_angle, 55, last_angle, last_angle, 75, Speed);
-                await groupMove(angle, angle, 75, angle, angle, 75, Speed);
-                await groupMove(angle, angle, 90, angle, angle, 90, Speed);
-                stepN = !stepN;
-                //last_angle = angle;
+                if (stepN)
+                {
+                    angle = (byte)(90 + angle);
+                    await groupMove(last_angle, last_angle, 55, last_angle, last_angle, 75, Speed);
+                    await groupMove(angle, angle, 75, angle, angle, 75, Speed);
+                    await groupMove(angle, angle, 90, angle, angle, 90, Speed);
+                    stepN = !stepN;
+                    //last_angle = angle;
+                }
+                else
+                {
+                    angle = (byte)(90 - angle);
+                    await groupMove(last_angle, last_angle, 105, last_angle, last_angle, 125, Speed);
+                    await groupMove(angle, angle, 105, angle, angle, 105, Speed);
+                    await groupMove(angle, angle, 90, angle, angle, 90, Speed);
+                    stepN = !stepN;
+                }
+                last_angle = angle;
             }
-            else
-            {
-                angle = (byte)(90 - angle);
-                await groupMove(last_angle, last_angle, 105, last_angle, last_angle, 125, Speed);
-                await groupMove(angle, angle, 105, angle, angle, 105, Speed);
-                await groupMove(angle, angle, 90, angle, angle, 90, Speed);
-                stepN = !stepN;
-            }
-            last_angle = angle;
-            //}
         }
 
       /*  private async void turnLeft()
@@ -453,42 +517,57 @@ namespace MaestroUsbUI.Pages
 
         private async void getUpFromFront()
         {
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
-            await groupMove(60, 0, 90, 120, 170, 90, 500);
-            await groupMove(120, 0, 60, 120, 170, 90, 500);
-            await groupMove(170, 0, 90, 10, 180, 90, 500);
-            await groupMove(90, 90, 90, 90, 90, 90, 1000);
+            if (maestroDevice != null)
+            {
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+                await groupMove(60, 0, 90, 120, 170, 90, 500);
+                await groupMove(120, 0, 60, 120, 170, 90, 500);
+                await groupMove(170, 0, 90, 10, 180, 90, 500);
+                await groupMove(90, 90, 90, 90, 90, 90, 1000);
+            }
         }
 
         private async void getUpFromBack()
         {
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
-            await groupMove(90, 180, 90, 90, 0, 90, 500);
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
+            if (maestroDevice != null)
+            {
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+                await groupMove(90, 180, 90, 90, 0, 90, 500);
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+            }
         }
 
         private async void rollLeft()
         {
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
-            await groupMove(90, 90, 90, 40, 90, 90, 100);
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
+            if (maestroDevice != null)
+            {
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+                await groupMove(90, 90, 90, 40, 90, 90, 100);
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+            }
         }
 
         private async void rollRight()
         {
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
-            await groupMove(140, 90, 90, 90, 90, 90, 100);
-            await groupMove(90, 90, 90, 90, 90, 90, 500);
+            if (maestroDevice != null)
+            {
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+                await groupMove(140, 90, 90, 90, 90, 90, 100);
+                await groupMove(90, 90, 90, 90, 90, 90, 500);
+            }
         }
 
         private void homeServos()
         {
-            maestroDevice.Maestro.setTarget(0, (ushort)(maestroDevice.Maestro.angleToMicroseconds(0, 90) + (Offsets[0] * 4)));
-            maestroDevice.Maestro.setTarget(1, (ushort)(maestroDevice.Maestro.angleToMicroseconds(1, 90) + (Offsets[1] * 4)));
-            maestroDevice.Maestro.setTarget(2, (ushort)(maestroDevice.Maestro.angleToMicroseconds(2, 90) + (Offsets[2] * 4)));
-            maestroDevice.Maestro.setTarget(3, (ushort)(maestroDevice.Maestro.angleToMicroseconds(3, 90) + (Offsets[3] * 4)));
-            maestroDevice.Maestro.setTarget(4, (ushort)(maestroDevice.Maestro.angleToMicroseconds(4, 90) + (Offsets[4] * 4)));
-            maestroDevice.Maestro.setTarget(5, (ushort)(maestroDevice.Maestro.angleToMicroseconds(5, 90) + (Offsets[5] * 4)));
+            if (maestroDevice != null)
+            {
+                maestroDevice.Maestro.setTarget(0, (ushort)(maestroDevice.Maestro.angleToMicroseconds(0, 90) + (Offsets[0] * 4)));
+                maestroDevice.Maestro.setTarget(1, (ushort)(maestroDevice.Maestro.angleToMicroseconds(1, 90) + (Offsets[1] * 4)));
+                maestroDevice.Maestro.setTarget(2, (ushort)(maestroDevice.Maestro.angleToMicroseconds(2, 90) + (Offsets[2] * 4)));
+                maestroDevice.Maestro.setTarget(3, (ushort)(maestroDevice.Maestro.angleToMicroseconds(3, 90) + (Offsets[3] * 4)));
+                maestroDevice.Maestro.setTarget(4, (ushort)(maestroDevice.Maestro.angleToMicroseconds(4, 90) + (Offsets[4] * 4)));
+                maestroDevice.Maestro.setTarget(5, (ushort)(maestroDevice.Maestro.angleToMicroseconds(5, 90) + (Offsets[5] * 4)));
+            }
         }
 
         protected async override void OnNavigatedTo(NavigationEventArgs eventArgs)
@@ -524,9 +603,10 @@ namespace MaestroUsbUI.Pages
                     maestroDevice.Maestro.setTarget(5, (ushort)(maestroDevice.Maestro.angleToMicroseconds(5, LAP) + (Offsets[5] * 4)));
                 }
 
-                startCommandServer();
+                
 
             }
+            startCommandServer();
         }
 
 
@@ -616,7 +696,10 @@ namespace MaestroUsbUI.Pages
                 if (Convert.ToUInt16(tbRA.Text) != slRA.Value)
                 {
                     tbRA.Text = slRA.Value.ToString();
-                    maestroDevice.Maestro.setTarget(2, (UInt16)(slRA.Value * 4));
+                    if (maestroDevice != null)
+                    {
+                        maestroDevice.Maestro.setTarget(2, (UInt16)(slRA.Value * 4));
+                    }
                 }
             }
         }
@@ -645,7 +728,10 @@ namespace MaestroUsbUI.Pages
                 if (Convert.ToUInt16(tbLH.Text) != slLH.Value)
                 {
                     tbLH.Text = slLH.Value.ToString();
-                    maestroDevice.Maestro.setTarget(3, (UInt16)(slLH.Value * 4));
+                    if (maestroDevice != null)
+                    {
+                        maestroDevice.Maestro.setTarget(3, (UInt16)(slLH.Value * 4));
+                    }
                 }
             }
         }
@@ -674,7 +760,10 @@ namespace MaestroUsbUI.Pages
                 if (Convert.ToUInt16(tbLK.Text) != slLK.Value)
                 {
                     tbLK.Text = slLK.Value.ToString();
-                    maestroDevice.Maestro.setTarget(4, (UInt16)(slLK.Value * 4));
+                    if (maestroDevice != null)
+                    {
+                        maestroDevice.Maestro.setTarget(4, (UInt16)(slLK.Value * 4));
+                    }
                 }
             }
         }
@@ -703,7 +792,10 @@ namespace MaestroUsbUI.Pages
                 if (Convert.ToUInt16(tbLA.Text) != slLA.Value)
                 {
                     tbLA.Text = slLA.Value.ToString();
-                    maestroDevice.Maestro.setTarget(5, (UInt16)(slLA.Value * 4));
+                    if (maestroDevice != null)
+                    {
+                        maestroDevice.Maestro.setTarget(5, (UInt16)(slLA.Value * 4));
+                    }
                 }
             }
         }
@@ -761,13 +853,15 @@ namespace MaestroUsbUI.Pages
 
                 }
                 file.Dispose();
-                maestroDevice.Maestro.setTarget(0, (ushort)(maestroDevice.Maestro.angleToMicroseconds(0, RHP) + (Offsets[0] * 4)));
-                maestroDevice.Maestro.setTarget(1, (ushort)(maestroDevice.Maestro.angleToMicroseconds(1, RKP) + (Offsets[1] * 4)));
-                maestroDevice.Maestro.setTarget(2, (ushort)(maestroDevice.Maestro.angleToMicroseconds(2, RAP) + (Offsets[2] * 4)));
-                maestroDevice.Maestro.setTarget(3, (ushort)(maestroDevice.Maestro.angleToMicroseconds(3, LHP) + (Offsets[3] * 4)));
-                maestroDevice.Maestro.setTarget(4, (ushort)(maestroDevice.Maestro.angleToMicroseconds(4, LKP) + (Offsets[4] * 4)));
-                maestroDevice.Maestro.setTarget(5, (ushort)(maestroDevice.Maestro.angleToMicroseconds(5, LAP) + (Offsets[5] * 4)));
-
+                if (maestroDevice != null)
+                {
+                    maestroDevice.Maestro.setTarget(0, (ushort)(maestroDevice.Maestro.angleToMicroseconds(0, RHP) + (Offsets[0] * 4)));
+                    maestroDevice.Maestro.setTarget(1, (ushort)(maestroDevice.Maestro.angleToMicroseconds(1, RKP) + (Offsets[1] * 4)));
+                    maestroDevice.Maestro.setTarget(2, (ushort)(maestroDevice.Maestro.angleToMicroseconds(2, RAP) + (Offsets[2] * 4)));
+                    maestroDevice.Maestro.setTarget(3, (ushort)(maestroDevice.Maestro.angleToMicroseconds(3, LHP) + (Offsets[3] * 4)));
+                    maestroDevice.Maestro.setTarget(4, (ushort)(maestroDevice.Maestro.angleToMicroseconds(4, LKP) + (Offsets[4] * 4)));
+                    maestroDevice.Maestro.setTarget(5, (ushort)(maestroDevice.Maestro.angleToMicroseconds(5, LAP) + (Offsets[5] * 4)));
+                }
             } catch(Exception e)
             {
                 file.Dispose();

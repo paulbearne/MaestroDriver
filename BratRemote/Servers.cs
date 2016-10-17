@@ -14,11 +14,11 @@ using Windows.Networking.Connectivity;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 
-namespace MaestroUsbUI
+namespace BratRemote
 {
 
 
-    internal class TcpServer
+    public sealed partial class TcpServer
     {
         private readonly int _port;
         public int Port { get { return _port; } }
@@ -26,8 +26,8 @@ namespace MaestroUsbUI
         private StreamSocketListener listener;
         private DataWriter _writer;
 
-        public delegate void DataRecived(string data);
-        public event DataRecived OnDataRecived;
+        public delegate void DataReceived(string data);
+        public event DataReceived OnDataReceived;
 
         public delegate void Error(string message);
         public event Error OnError;
@@ -51,11 +51,10 @@ namespace MaestroUsbUI
 
                 //create new listener
                 listener = new StreamSocketListener();
-
                 //set recieved call back 
                 listener.ConnectionReceived += Listener_ConnectionReceived;
                 //bind to port
-                await listener.BindServiceNameAsync(Port.ToString());
+                await listener.BindServiceNameAsync(Port.ToString(), SocketProtectionLevel.PlainSocket);
             }
             catch (Exception e)
             {
@@ -67,6 +66,7 @@ namespace MaestroUsbUI
 
         private async void Listener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
+            
             var reader = new DataReader(args.Socket.InputStream);
             _writer = new DataWriter(args.Socket.OutputStream);
             try
@@ -78,20 +78,19 @@ namespace MaestroUsbUI
                     if (sizeFieldCount != sizeof(uint))
                         return;
 
-                    //Tamanho da string
                     uint stringLength = reader.ReadUInt32();
                     //read the string
                     uint actualStringLength = await reader.LoadAsync(stringLength);
-                    //Caso ocora um desconexão
+                    //check we have the correct string length
                     if (stringLength != actualStringLength)
                         return;
                     //see if we have data recieved call back
-                    if (OnDataRecived != null)
+                    if (OnDataReceived != null)
                     {
                         //read the string 
                         string data = reader.ReadString(actualStringLength);
                         //call callback
-                        OnDataRecived(data);
+                        OnDataReceived(data);
                     }
                 }
 
@@ -127,9 +126,19 @@ namespace MaestroUsbUI
                 }
             }
         }
+
+        public void Close()
+        {
+            if (_writer != null)
+            {
+                _writer.Dispose();
+            }
+
+            listener.Dispose();
+        }
     }
 
-    internal class TcpClient
+    public sealed partial class TcpClient
     {
         private readonly string _ip;
         private bool _connected = false;
@@ -144,9 +153,12 @@ namespace MaestroUsbUI
         public delegate void DataReceived(string data);
         public event DataReceived OnDataReceived;
 
+        public delegate void Connected(string Ip,int Port);
+        public event Connected OnConnected;
+
         public string Ip { get { return _ip; } }
         public int Port { get { return _port; } }
-        public bool Connected { get { return _connected; } }
+        public bool isConnected { get { return _connected; } }
 
         public TcpClient(string ip, int port)
         {
@@ -154,26 +166,27 @@ namespace MaestroUsbUI
             _port = port;
         }
 
-        public async Task<bool> Connect()
+        public async void Connect()
         {
             try
             {
                 var hostName = new HostName(Ip);
                 _socket = new StreamSocket();
                 await _socket.ConnectAsync(hostName, Port.ToString());
-                _connected = true;
                 _writer = new DataWriter(_socket.OutputStream);
+                if (OnConnected != null)
+                {
+                    OnConnected(Ip,_port);
+                }
+                _connected = true;
                 Read();
-                return true;
             }
             catch (Exception ex)
             {
-                return false;
                 if (OnError != null)
                     OnError(ex.Message);
             }
         }
-
 
         public async void Send(string message)
         {
@@ -195,6 +208,7 @@ namespace MaestroUsbUI
                     OnError(ex.Message);
             }
         }
+
 
         private async void Read()
         {
@@ -233,17 +247,16 @@ namespace MaestroUsbUI
             _reader.DetachStream();
             _reader.Dispose();
             _connected = false;
+
             _socket.Dispose();
         }
     }
 
-    internal class UdpServer
+    public class UdpServer
     {
-        private readonly string _ip;
         private readonly int _port;
         private DatagramSocket listener;
-        private DataWriter _writer;
-        private DataReader _reader;
+        
 
         public delegate void Error(string message);
         public event Error OnError;
@@ -359,16 +372,6 @@ namespace MaestroUsbUI
 
         public void Close()
         {
-            if (_writer != null)
-            {
-                _writer.DetachStream();
-                _writer.Dispose();
-            }
-            if (_reader != null)
-            {
-                _reader.DetachStream();
-                _reader.Dispose();
-            }
 
             listener.Dispose();
         }

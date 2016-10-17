@@ -19,20 +19,7 @@ using System.Xml.Linq;
 
 namespace Pololu.Usc.Sequencer
 {
-    class sequenceFrame
-    {
-        string name;
-        UInt16 duration;
-        string targets;
-    }
-
-    class sequenceItem
-    {
-        string name;
-        uint framecount;
-        sequenceFrame[] frames;
-    }
-
+   
     public class Sequence
     {
         private ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;

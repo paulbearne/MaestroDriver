@@ -17,7 +17,7 @@ namespace MaestroUsbUI
 {
 
 
-    internal class TcpServer
+    public sealed partial class TcpServer
     {
         private readonly int _port;
         public int Port { get { return _port; } }
@@ -25,8 +25,8 @@ namespace MaestroUsbUI
         private StreamSocketListener listener;
         private DataWriter _writer;
 
-        public delegate void DataRecived(string data);
-        public event DataRecived OnDataRecived;
+        public delegate void DataReceived(string data);
+        public event DataReceived OnDataReceived;
 
         public delegate void Error(string message);
         public event Error OnError;
@@ -50,8 +50,6 @@ namespace MaestroUsbUI
 
                 //create new listener
                 listener = new StreamSocketListener();
-                
-
                 //set recieved call back 
                 listener.ConnectionReceived += Listener_ConnectionReceived;
                 //bind to port
@@ -77,21 +75,20 @@ namespace MaestroUsbUI
                     //make sure we have string size
                     if (sizeFieldCount != sizeof(uint))
                         return;
-
-                    //Tamanho da string
+                  
                     uint stringLength = reader.ReadUInt32();
                     //read the string
                     uint actualStringLength = await reader.LoadAsync(stringLength);
-                    //Caso ocora um desconexão
+                    //check we have the correct string length
                     if (stringLength != actualStringLength)
                         return;
                     //see if we have data recieved call back
-                    if (OnDataRecived != null)
+                    if (OnDataReceived != null)
                     {
                         //read the string 
                         string data = reader.ReadString(actualStringLength);
                         //call callback
-                        OnDataRecived(data);
+                        OnDataReceived(data);
                     }
                 }
 
@@ -127,9 +124,19 @@ namespace MaestroUsbUI
                 }
             }
         }
+
+        public void Close()
+        {
+            if (_writer != null)
+            {
+                _writer.Dispose();
+            }
+
+            listener.Dispose();
+        }
     }
 
-    internal class TcpClient
+    public sealed partial class TcpClient
     {
         private readonly string _ip;
         private bool _connected = false;
@@ -236,13 +243,11 @@ namespace MaestroUsbUI
         }
     }
 
-    public class UdpServer
+    public sealed partial class UdpServer
     {
-        private readonly string _ip;
         private readonly int _port;
         private DatagramSocket listener;
-        private DataWriter _writer;
-        private DataReader _reader;
+
 
         public delegate void Error(string message);
         public event Error OnError;
@@ -324,21 +329,25 @@ namespace MaestroUsbUI
 
         public async Task SendMessage(string message, string ipAddress)
         {
-
-            using (var stream = await listener.GetOutputStreamAsync(new HostName(ipAddress), _port.ToString()))
+            try
             {
-                using (var writer = new DataWriter(stream))
+                using (var stream = await listener.GetOutputStreamAsync(new HostName(ipAddress), _port.ToString()))
                 {
-                    var data = Encoding.UTF8.GetBytes(message);
+                    using (var writer = new DataWriter(stream))
+                    {
+                        var data = Encoding.UTF8.GetBytes(message);
 
-                    writer.WriteBytes(data);
-                    await writer.StoreAsync();
+                        writer.WriteBytes(data);
+                        await writer.StoreAsync();
 
+                    }
                 }
+            } catch (Exception e)
+            {
+                Debug.WriteLine(e);
             }
 
         }
-
 
         public string GetLocalIp()
         {
@@ -354,6 +363,13 @@ namespace MaestroUsbUI
 
             // the ip address
             return hostname?.CanonicalName;
+        }
+
+
+        public void Close()
+        {
+
+            listener.Dispose();
         }
     }
 

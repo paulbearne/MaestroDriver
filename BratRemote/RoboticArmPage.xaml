@@ -1,9 +1,8 @@
-﻿<Page x:Class="MaestroUsbUI.Pages.RoboticArmPage"
+﻿<Page x:Class="BratRemote.RoboticArmPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:MaestroUsbUI="using:MaestroUsbUI"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      xmlns:local="using:MaestroUsbUI.Pages"
+      xmlns:local="using:BratRemote"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       mc:Ignorable="d">
 
@@ -197,7 +196,7 @@
                             Width="150"
                             Height="40"
                             Margin="20,0,0,0"
-                            Click="btnGetParkPos_Click_1"
+                            Click="btnGetParkPos_Click"
                             Content="Park" />
                     <Button Name="btnParkPos"
                             Width="150"
@@ -209,7 +208,7 @@
                             Width="150"
                             Height="40"
                             Margin="20,0,0,0"
-                            Click="btnGotoReadyPos_Click_1"
+                            Click="btnGotoReadyPos_Click"
                             Content="Ready" />
                     <Button Name="btnReadyPos"
                             Width="150"

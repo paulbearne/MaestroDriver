@@ -1,11 +1,8 @@
-﻿using MaestroUsbUI;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Core;
@@ -17,7 +14,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
-// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
+// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace BratRemote
 {
@@ -26,318 +23,181 @@ namespace BratRemote
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        string Ipaddress;
         UdpServer locatorServer;
         UdpServer commandServer;
-        Boolean controlsEnabled = false;
-        bool firstconnect = false;
-        private Timer connectionTimer;
+        string IpAddress;
 
         public MainPage()
         {
             this.InitializeComponent();
-            controlState(false);
-            setupUdpservers();
+            
         }
 
         public void setupUdpservers()
         {
             locatorServer = new UdpServer(9999);
-            locatorServer.StartListener();
-            locatorServer.OnDataReceived += locatorServer_OnDataReceived;
             commandServer = new UdpServer(9998);
+            locatorServer.StartListener();
             commandServer.StartListener();
             commandServer.OnDataReceived += CommandServer_OnDataReceived;
+            locatorServer.OnDataReceived += locatorServer_OnDataReceived;
+        }
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            
+            setupUdpservers();
+        }
+
+
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            
+            locatorServer.Close();
+            commandServer.Close();
+            base.OnNavigatingFrom(e);
+        }
+
+        private  void CommandServer_OnDataReceived(string senderIp, string data)
+        {
+            
+            IpAddress = senderIp;
            
         }
 
-        
+        private void locatorServer_OnDataReceived(string senderIp, string data)
+        {
+            if (Globals.tcpClient == null)
+            {
+                Globals.tcpClient = new TcpClient(senderIp, 1500);
+                Globals.tcpClient.OnConnected += TcpClient_OnConnected;
+                Globals.tcpClient.OnDataReceived += TcpClient_OnDataReceived;
+                Globals.tcpClient.OnError += TcpClient_OnError;
+                Globals.tcpClient.Connect();
+            }
+        }
 
-        private async void locatorServer_OnDataReceived(string senderIp, string data)
+        private void TcpClient_OnError(string message)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async void TcpClient_OnConnected(string Ip, int port)
+        {
+            // connected so stop listening for device
+            await Dispatcher.RunAsync(
+                   CoreDispatcherPriority.Normal,
+                   new DispatchedHandler(() =>
+                   {
+                       tbStatus.Text = "Connected to " + Ip +" on Port "+port.ToString();
+                   }));
+
+        }
+
+        private async void TcpClient_OnDataReceived(string data)
         {
             if (data.Contains("Brat"))
             {
-                
-                Ipaddress = senderIp;
                 await Dispatcher.RunAsync(
-                        CoreDispatcherPriority.Normal,
-                        new DispatchedHandler(() =>
-                        {
-                            tbDeviceName.Text = "Brat IPAddress :" + Ipaddress;
-                        }));
-                if (!firstconnect)
-                {
-                    firstconnect = true;
-                    controlsEnabled  = true;
-                    // first time send values command to get slider values
-                    await commandServer.SendMessage("values", Ipaddress);
-                    controlState(controlsEnabled);
-                }
+                       CoreDispatcherPriority.Normal,
+                       new DispatchedHandler(() =>
+                       {
+                           this.Frame.Navigate(typeof(BratBipedPage));
+                       }));
             }
             else
             {
-                // been disconnected form brat 
-                await Dispatcher.RunAsync(
+                if (data.Contains("Robot Arm"))
+                {
+                    await Dispatcher.RunAsync(
                        CoreDispatcherPriority.Normal,
                        new DispatchedHandler(() =>
                        {
-                           tbDeviceName.Text = "Not Connected";
+                           this.Frame.Navigate(typeof(RoboticArmPage));
                        }));
-                firstconnect = false;
-                if (controlsEnabled)
-                {
-                    controlsEnabled = false;
-                    controlState(controlsEnabled);
-
                 }
 
             }
         }
 
-        private async void controlState(Boolean enabled)
+        // recieved a locator message so connect our tcp socket to it
+        /* if (data.Contains("Brat"))
+         {
+             await Dispatcher.RunAsync(
+                    CoreDispatcherPriority.Normal,
+                    new DispatchedHandler(() =>
+                    {
+                        this.Frame.Navigate(typeof(BratBipedPage));
+                    }));
+         }
+         else
+         {
+             if (data.Contains("Robot Arm"))
+             {
+                 await Dispatcher.RunAsync(
+                    CoreDispatcherPriority.Normal,
+                    new DispatchedHandler(() =>
+                    {
+                        this.Frame.Navigate(typeof(RoboticArmPage));
+                    }));
+             }
+
+         }
+         IpAddress = senderIp;
+         await Dispatcher.RunAsync(
+                   CoreDispatcherPriority.Normal,
+                   new DispatchedHandler(() =>
+                   {
+                       tbStatus.Text = "Connected to " + IpAddress;
+                   }));
+    } */
+
+
+
+        private void btnArm_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            await Dispatcher.RunAsync(
-                       CoreDispatcherPriority.Normal,
-                       new DispatchedHandler(() =>
-                       {
-                           btnBack.IsEnabled = enabled;
-                           btnGetUpBack.IsEnabled = enabled;
-                           btngetUpFront.IsEnabled = enabled;
-                           btnHeader.IsEnabled = enabled;
-                           btnKick.IsEnabled = enabled;
-                           btnKickRight.IsEnabled = enabled;
-                           btnLeft.IsEnabled = enabled;
-                           btnRight.IsEnabled = enabled;
-                           btnUp.IsEnabled = enabled;
-                           btnrollLeft.IsEnabled = enabled;
-                           btnrollRight.IsEnabled = enabled;
-                           btnOk.IsEnabled = enabled;
-                           btnPower.IsEnabled = enabled;
-                           slAngle.IsEnabled = enabled;
-                           slRH.IsEnabled = enabled;
-                           slRK.IsEnabled = enabled;
-                           slRA.IsEnabled = enabled;
-                           slLH.IsEnabled = enabled;
-                           slLK.IsEnabled = enabled;
-                           slLA.IsEnabled = enabled;
-                       }));
+            Brush blueBrush = new SolidColorBrush(Windows.UI.Colors.SlateBlue);
+            brArm.BorderBrush = blueBrush;
         }
 
-        private async void CommandServer_OnDataReceived(string senderIp, string data)
+        private void btnArm_PointerExited(object sender, PointerRoutedEventArgs e)
         {
+            Brush whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
+            brArm.BorderBrush = whiteBrush;
 
+        }
+
+        private void btnArm_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            if (Globals.tcpClient.isConnected)
+            {
+                Globals.tcpClient.Send("Page=0");
+            }
+            this.Frame.Navigate(typeof(RoboticArmPage));
             
-            // value command resposne is of Value,Cmd,num,num
-            if (data.Contains("value"))
-            {
-                
-                string[] parameters = data.Split(',');
-                UInt16 cmd = UInt16.Parse(parameters[2]);
-                Int16 value = Int16.Parse(parameters[3]);
-                await Dispatcher.RunAsync(
-                        CoreDispatcherPriority.Normal,
-                        new DispatchedHandler(() =>
-                        {
-                            Status.Text = "recieved value " + value.ToString();
-
-                            switch (cmd)
-                            {
-                                case 0:
-                                    slRH.Value = value;
-                                    break;
-                                case 1:
-                                    slRK.Value = value;
-                                    break;
-                                case 2:
-                                    slRA.Value = value;
-                                    break;
-                                case 3:
-                                    slLH.Value = value;
-                                    break;
-                                case 4:
-                                    slLK.Value = value;
-                                    break;
-                                case 5:
-                                    slLA.Value = value;
-                                    break;
-                                case 6:
-                                    slAngle.Value = value;
-                                    break;
-                            }
-                        }));
-
-            }
-                        
-            // shouldn't get anything but value here
-        }
- 
-        private async void btnUp_Click(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,2",Ipaddress);
-            }
         }
 
-        private async void btnrollLeft_Click(object sender, RoutedEventArgs e)
+        private void btnBratt_PointerExited(object sender, PointerRoutedEventArgs e)
         {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,6",Ipaddress);
-            }
+            Brush whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
+            brBrat.BorderBrush = whiteBrush;
         }
 
-        private async void btnrollRight_Click(object sender, RoutedEventArgs e)
+        private void btnBratt_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,7",Ipaddress);
-            }
+            Brush blueBrush = new SolidColorBrush(Windows.UI.Colors.SlateBlue);
+            brBrat.BorderBrush = blueBrush;
         }
 
-        private async void btnLeft_Click(object sender, RoutedEventArgs e)
+        private void btnBratt_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            if (commandServer != null)
+            if (Globals.tcpClient != null)
             {
-                await commandServer.SendMessage("cmd,3",Ipaddress);
-            }
-        }
-
-        private async void btnRight_Click(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,5",Ipaddress);
-            }
-        }
-
-        private async void btnOk_Click(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,8",Ipaddress);
-            }
-        }
-
-
-        private async void btnBack_Click(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,4",Ipaddress);
-            }
-        }
-
-        private async void btnKick_Click(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,9",Ipaddress);
-            }
-        }
-
-        private async void btnGetUpBack_Click(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,10",Ipaddress);
-            }
-        }
-
-        private async void btngetUpFront_Click(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,11",Ipaddress);
-            }
-        }
-
-        private async void btnPower_Unchecked(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,0",Ipaddress);
-            }
-        }
-
-       
-        private async void btnPower_Checked(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,1",Ipaddress);
-            }
-        }
-
-        private async void slRH_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("value,cmd,0," + slRH.Value.ToString(),Ipaddress);
-            }
-        }
-
-        private async void slRK_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("value,cmd,1," + slRK.Value.ToString(),Ipaddress);
-            }
-        }
-
-        private async void slRA_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("value,cmd,2," + slRA.Value.ToString(),Ipaddress);
-            }
-        }
-
-        private async void slLH_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("value,cmd,3," + slLH.Value.ToString(),Ipaddress);
-            }
-        }
-
-        private async void slLK_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("value,cmd,4," + slLK.Value.ToString(),Ipaddress);
-            }
-        }
-
-        private async void slLA_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("value,cmd,5," + slLA.Value.ToString(),Ipaddress);
-            }
-        }
-
-        private async void slAngle_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("value,cmd,6," + slAngle.Value.ToString(),Ipaddress);
-            }
-        }
-
-        private async void btnKickRight_Click(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,12");
-            }
-        }
-
-        private async void btnHeader_Click(object sender, RoutedEventArgs e)
-        {
-            if (commandServer != null)
-            {
-                await commandServer.SendMessage("cmd,13");
+                if (Globals.tcpClient.isConnected)
+                {
+                   Globals.tcpClient.Send("Page=1");
+                }
+                this.Frame.Navigate(typeof(BratBipedPage));
             }
         }
     }

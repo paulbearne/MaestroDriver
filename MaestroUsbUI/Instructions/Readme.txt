@@ -40,6 +40,12 @@ Servo_Paramter
 Installation 
 Before you can use the maestro in Usb mode you have install and assign winusb drivers.
 
+NOTE in the latest versions of windows 10 IOT 
+you must start by going into the device portal
+then choose Devices
+and change Default Controller Driver to
+Direct Memory Mapped Driver
+
 step 1 open powershell with administrator access (right click powershell run as administrator)
 step 2 type
 

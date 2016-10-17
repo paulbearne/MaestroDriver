@@ -154,7 +154,7 @@ namespace Pololu.Usc
         {
             privateScript = null;
 
-         //   privateProgram = BytecodeReader.Read(script, servoCount != 6);
+            privateProgram = BytecodeReader.Read(script, servoCount != 6);
 
             // If no exceptions were raised, set the script.
             privateScript = script;
